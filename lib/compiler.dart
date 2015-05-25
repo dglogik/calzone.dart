@@ -21,7 +21,7 @@ const Map<String, String> _NAME_REPLACEMENTS = const {
   "<": "lessThan",
   "<=": "lessThanOrEqual",
   ">": "greaterThan",
-  ">=": "greaterThanOrEqual"
+  ">=": "greaterThanOrEqual",
   "~/": "divideTruncate",
   "~": "bitwiseNegate",
   "<<": "shiftLeft",
