@@ -3,6 +3,6 @@ library calzone.util;
 abstract class TypeTransformer {
   List<String> get types;
 
-  String transformTo(String name, List typeTree);
-  String transformFrom(String name, List typeTree);
+  void transformToDart(StringBuffer output, TypeTransformer base, String name, List tree, List<String> globals);
+  void transformFromDart(StringBuffer output, TypeTransformer base, String name, List tree, List<String> globals);
 }
