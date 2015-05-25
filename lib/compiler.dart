@@ -8,27 +8,31 @@ import "dart:convert";
 part "src/compiler/base_transformer.dart";
 part "src/compiler/compiler.dart";
 
-// TODO: Add ~/ ~ << % >> once I figure out names for them
-Map<String, String> _NAME_REPLACEMENTS = {
+const Map<String, String> _NAME_REPLACEMENTS = const {
   "[]": "get",
   "[]=": "set",
   "==": "equals",
   "+": "add",
-  "-": "minus",
+  "-": "subtract",
   "*": "multiply",
   "/": "divide",
-  "^": "power",
-  "|": "or",
-  "&": "and",
+  "|": "bitwiseOr",
+  "&": "bitwiseAnd",
   "<": "lessThan",
-  "=<": "lessThanOrEqual",
+  "<=": "lessThanOrEqual",
   ">": "greaterThan",
   ">=": "greaterThanOrEqual"
+  "~/": "divideTruncate",
+  "~": "bitwiseNegate",
+  "<<": "shiftLeft",
+  ">>": "shiftRight",
+  "%": "modulo",
+  "^": "bitwiseExclusiveOr"
 };
 
-List _PRIMITIVES = ["String", "int", "Integer", "bool", "Boolean"];
+const List<String> _PRIMITIVES = const ["String", "int", "Integer", "bool", "Boolean"];
 
-List _getTypeTree(String type) {
+List<dynamic> _getTypeTree(String type) {
   RegExp regex = new RegExp(r"([A-Za-z]+)(?:\<([\w\s,]+)\>)*");
   var tree = [];
 
