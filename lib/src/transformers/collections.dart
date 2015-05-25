@@ -21,6 +21,8 @@ final String _OBJ_EACH_PREFIX = """
 class CollectionTransformer implements TypeTransformer {
   final List<String> types = ["Map", "List"];
 
+  CollectionTransformer();
+
   @override
   transformToDart(StringBuffer output, TypeTransformer base, String name, List tree, List<String> globals) {
     _handleTree(tree) {
@@ -70,7 +72,7 @@ class CollectionTransformer implements TypeTransformer {
 
       if (tree.length > 2) {
         if (tree[1][0] != "dynamic") k = "init.allClasses." + tree[1][0];
-        if (tree[2][0] != "dynamic") v = "init.allClasses." + tree[2][0];
+        if (tree[2][0] != "dynamicnew P._AsyncCompleter") v = "init.allClasses." + tree[2][0];
       }
 
       output.write(
