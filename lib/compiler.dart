@@ -23,6 +23,25 @@ Map<String, String> _nameReplacements = {
   ">=": "greaterThanOrEqual"
 };
 
+Map<String, String> _globals = {
+  "objEach": """
+    function objEach(obj, cb, thisArg) {
+      if(typeof thisArg !== 'undefined') {
+        cb = cb.bind(thisArg);
+      }
+
+      var count = 0;
+      var keys = Object.keys(obj);
+      var length = keys.length;
+
+      for(; count < length; count++) {
+        var key = keys[count];
+        cb(obj[key], key, obj);
+      }
+    }
+  """
+};
+
 List _primitives = ["String", "int", "Integer", "bool", "Boolean"];
 
 List _getTypeTree(String type) {
@@ -47,6 +66,7 @@ class Compiler {
   List<TypeTransformer> typeTransformers = [];
 
   Map<String, Map> _wrappedClasses = {};
+  List<String> _globalList = [];
 
   Compiler(this.file);
 
@@ -64,13 +84,15 @@ class Compiler {
     _handleTree(tree) {
       if (tree[0] == "Map") {
         if (tree.length > 2) {
+          if (!_globalList.contains(_globals["objEach"])) _globalList
+              .add(_globals["objEach"]);
           output.write("objEach(a, function(a, i) {");
           // _handleTree(tree[1]);
           _handleTree(tree[2]);
           output.write("}, a);");
         }
 
-        var k = "null";
+        var k = "P.String";
         var v = "null";
 
         if (tree.length > 2) {
@@ -100,13 +122,15 @@ class Compiler {
 
     if (tree[0] == "Map") {
       if (tree.length > 2) {
+        if (!_globalList.contains(_globals["objEach"])) _globalList
+            .add(_globals["objEach"]);
         output.write("objEach($name, function(a, i) {");
         // _handleTree(tree[1]);
         _handleTree(tree[2]);
         output.write("}, $name);");
       }
 
-      var k = "null";
+      var k = "P.String";
       var v = "null";
 
       if (tree.length > 2) {
@@ -233,7 +257,7 @@ class Compiler {
           }
 
           var actualName = null;
-          if (piece.indexOf(" ") != -1) {
+          if (piece.contains(" ")) {
             actualName = piece.split(" ")[0];
             piece = piece.split(" ")[1];
           } else {
@@ -289,7 +313,7 @@ class Compiler {
       output.write("enumerable: false");
       output.write(",value: ${data["value"]}");
     } else {
-      output.write("enumerable: ${(!name.startsWith("_")).toString()}");
+      output.write("enumerable: ${(!name.startsWith("_"))}");
       output.write(",get: function() { var returned = this.obj.$name;");
       _dartToJS(output, "returned", data["type"]);
       output.write("return returned;},set: function(v) {");
@@ -355,23 +379,7 @@ class Compiler {
   }
 
   String compile(List<String> libraries) {
-    StringBuffer output = new StringBuffer("");
-    output.write("""
-      function objEach(obj, cb, thisArg) {
-        if(typeof thisArg !== 'undefined') {
-          cb = cb.bind(thisArg);
-        }
-
-        var count = 0;
-        var keys = Object.keys(obj);
-        var length = keys.length;
-
-        for(; count < length; count++) {
-          var key = keys[count];
-          cb(obj[key], key, obj);
-        }
-      }
-    """);
+    StringBuffer output = new StringBuffer();
 
     var children = [];
     for (var library in file["elements"]["library"].values) {
@@ -402,6 +410,6 @@ class Compiler {
       }
     }
 
-    return output.toString();
+    return _globalList.join() + output.toString();
   }
 }
