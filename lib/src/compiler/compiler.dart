@@ -28,51 +28,55 @@ class Compiler {
       String type = _TYPE_REGEX.firstMatch(data["type"]).group(1);
       var isOptional = false;
       var isPositional = false;
-      List<String> p = type.substring(1, type.length - 1).split(",")..removeWhere((piece) => piece.length == 0);
-      if (p == null || p.length == 0) {
-        parameters = [];
-      } else {
-        parameters = p.map((String piece) {
-          piece = piece.trim();
 
-          if (piece.startsWith("[")) {
-            isPositional = true;
-            piece = piece.substring(1);
-          }
-          if (piece.endsWith("]")) {
-            isPositional = false;
-            piece = piece.substring(0, piece.length - 1);
-          }
-          if (piece.startsWith("{")) {
-            isOptional = true;
-            piece = piece.substring(1);
-          }
-          if (piece.endsWith("}")) {
-            isOptional = false;
-            piece = piece.substring(0, piece.length - 1);
-          }
+      if(type.length > 0) {
+        List<String> p = type.substring(1, type.length - 1).split(",")
+          ..removeWhere((piece) => piece.length == 0);
+        if (p == null || p.length == 0) {
+          parameters = [];
+        } else {
+          parameters = p.map((String piece) {
+            piece = piece.trim();
 
-          var actualName = null;
-          var match = _TYPE_REGEX.firstMatch(piece);
-          if(match != null) {
-            piece = "Function<${match.group(1).split(",")
-                .map((e) => e.replaceAll(r"[\[\]\{\}]", ""))
-                .map((e) => e.contains(" ") ? e.split(" ")[0] : "dynamic")
-                .join(",")},${match.group(2)}";
-          } else if (piece.contains(" ")) {
-            actualName = piece.split(" ")[0];
-            piece = piece.split(" ")[1];
-          } else {
-            name += "n";
-          }
+            if (piece.startsWith("[")) {
+              isPositional = true;
+              piece = piece.substring(1);
+            }
+            if (piece.endsWith("]")) {
+              isPositional = false;
+              piece = piece.substring(0, piece.length - 1);
+            }
+            if (piece.startsWith("{")) {
+              isOptional = true;
+              piece = piece.substring(1);
+            }
+            if (piece.endsWith("}")) {
+              isOptional = false;
+              piece = piece.substring(0, piece.length - 1);
+            }
 
-          return {
-            "name": actualName != null ? actualName : name,
-            "declaredType": piece,
-            "isPositional": isPositional,
-            "isOptional": isOptional
-          };
-        });
+            var actualName = null;
+            var match = _TYPE_REGEX.firstMatch(piece);
+            if (match != null) {
+              piece = "Function<${match.group(1).split(",")
+              .map((e) => e.replaceAll(r"[\[\]\{\}]", ""))
+              .map((e) => e.contains(" ") ? e.split(" ")[0] : "dynamic")
+              .join(",")},${match.group(2)}";
+            } else if (piece.contains(" ")) {
+              actualName = piece.split(" ")[0];
+              piece = piece.split(" ")[1];
+            } else {
+              name += "n";
+            }
+
+            return {
+              "name": actualName != null ? actualName : name,
+              "declaredType": piece,
+              "isPositional": isPositional,
+              "isOptional": isOptional
+            };
+          });
+        }
       }
     }
     var paramString = parameters.map((param) {
@@ -103,7 +107,7 @@ class Compiler {
       output.write("var returned=(" +
       (codeStr != null ? codeStr : code.substring(code.indexOf(":") + 2)) +
       ").call($binding${paramString.length > 0 ? "," : ""}$paramString);");
-      _base.transformFrom(output, "returned", data["type"].split(r"\(([^]*)\) -> ([^]*)")[1]);
+      _base.transformFrom(output, "returned", _TYPE_REGEX.firstMatch(data["type"]).group(2));
       output.write("return returned;};");
     }
   }
