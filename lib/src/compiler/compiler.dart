@@ -1,5 +1,7 @@
 part of calzone.compiler;
 
+RegExp _TYPE_REGEX = new RegExp(r"\(([^]*)\) -> ([^]*)");
+
 class Compiler {
   final Map<String, dynamic> file;
 
@@ -23,14 +25,11 @@ class Compiler {
     if (parameters.length == 0) {
       // needs work
       String name = "\$n";
-      var type = data["type"].split(" -> ")[0];
+      String type = _TYPE_REGEX.firstMatch(data["type"]).group(1);
       var isOptional = false;
       var isPositional = false;
-      List<String> p = type
-      .substring(1, type.length - 1)
-      .split(",")
-      .removeWhere((piece) => piece.length == 0);
-      if (p == null) {
+      List<String> p = type.substring(1, type.length - 1).split(",")..removeWhere((piece) => piece.length == 0);
+      if (p == null || p.length == 0) {
         parameters = [];
       } else {
         parameters = p.map((String piece) {
@@ -54,12 +53,19 @@ class Compiler {
           }
 
           var actualName = null;
-          if (piece.contains(" ")) {
+          var match = _TYPE_REGEX.firstMatch(piece);
+          if(match != null) {
+            piece = "Function<${match.group(1).split(",")
+                .map((e) => e.replaceAll(r"[\[\]\{\}]", ""))
+                .map((e) => e.contains(" ") ? e.split(" ")[0] : "dynamic")
+                .join(",")},${match.group(2)}";
+          } else if (piece.contains(" ")) {
             actualName = piece.split(" ")[0];
             piece = piece.split(" ")[1];
           } else {
             name += "n";
           }
+
           return {
             "name": actualName != null ? actualName : name,
             "declaredType": piece,
@@ -97,7 +103,7 @@ class Compiler {
       output.write("var returned=(" +
       (codeStr != null ? codeStr : code.substring(code.indexOf(":") + 2)) +
       ").call($binding${paramString.length > 0 ? "," : ""}$paramString);");
-      _base.transformFrom(output, "returned", data["type"].split(" -> ")[1]);
+      _base.transformFrom(output, "returned", data["type"].split(r"\(([^]*)\) -> ([^]*)")[1]);
       output.write("return returned;};");
     }
   }
