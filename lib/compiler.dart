@@ -30,7 +30,7 @@ const Map<String, String> _NAME_REPLACEMENTS = const {
   "^": "bitwiseExclusiveOr"
 };
 
-const List<String> _PRIMITIVES = const ["String", "int", "Integer", "bool", "Boolean"];
+const List<String> _PRIMITIVES = const ["String", "Number", "num", "double", "int", "Integer", "bool", "Boolean"];
 
 List<dynamic> _getTypeTree(String type) {
   RegExp regex = new RegExp(r"([A-Za-z]+)(?:\<([\w\s,]+)\>)*");
@@ -38,10 +38,10 @@ List<dynamic> _getTypeTree(String type) {
 
   Match match = regex.firstMatch(type);
   if (match == null) return tree;
-  tree.add(match.group(0));
+  tree.add(match.group(1));
 
-  if (match.group(1).trim().length > 0 && match.group(1) != type) {
-    for (var group in match.group(1).split(r"[\,]{1}\s*")) tree
+  if (match.group(2) != null && match.group(2).trim().length > 0 && match.group(2) != type) {
+    for (var group in match.group(2).split(r"[\,]{1}\s*")) tree
         .addAll(_getTypeTree(group));
   }
 

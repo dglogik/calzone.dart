@@ -12,7 +12,7 @@ class PromiseTransformer implements TypeTransformer {
 
   @override
   transformToDart(StringBuffer output, TypeTransformer base, String name, List tree, List<String> globals) {
-    output.write("var completer = new P._AsyncCompleter(new P._Future(0, \$.Zone__current, null))");
+    output.write("var completer = new P._SyncCompleter(new P._Future(0, \$.Zone__current, null))");
     output.write("$name.then((then) {");
     if(tree.length > 1)
       base.transformToDart(output, base, "then", tree[1], globals);
@@ -28,7 +28,7 @@ class PromiseTransformer implements TypeTransformer {
     output.write("var promise = new ${_usePolyfill ? "\$Promise" : "Promise"}(function(then, error) {$name.then\$2\$onError({call\$1:function(val) {");
     if(tree.length > 1)
       base.transformFromDart(output, base, "val", tree[1], globals);
-    output.write("then(val); }}, {call\$1: function(err) {error(err);}})});");
+    output.write("then(val); }}, {call\$1: function(err) {error(err);}});});");
     output.write("$name = promise;");
   }
 }

@@ -31,27 +31,16 @@ class BaseTypeTransformer implements TypeTransformer {
     if (_PRIMITIVES.contains(type)) return;
 
     if (_compiler._wrappedClasses.containsKey(type)) {
-      output.write("$name = Object.create(module.exports.$name.prototype)");
+      output.write("$name = Object.create(module.exports.$type.prototype);");
 
       _compiler._handleClassField(output, {"name": "isWrapped", "value": "true"}, name);
 
       _compiler._handleClassField(output, {
         "name": "obj",
-        "value": "Object.create(init.allClasses.$name.prototype)"
+        "value": "Object.create(init.allClasses.$type.prototype)"
       }, name);
 
-      var data = _compiler._wrappedClasses[type];
-      for (var child in data["children"]) {
-        child = child.split("/");
-
-        var type = child[0];
-        var id = child[1];
-
-        if (type != "field") continue;
-
-        _compiler._handleClassField(output, _compiler.file["elements"][type][id], name);
-      }
-
+      output.write("$name = module.exports.$type.fromObj($name);");
       return;
     }
 

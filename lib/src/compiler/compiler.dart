@@ -8,6 +8,7 @@ class Compiler {
   List<TypeTransformer> typeTransformers = [];
 
   BaseTypeTransformer _base;
+  List<String> _allClasses = [];
   Map<String, Map> _wrappedClasses = {};
   List<String> _globals = [];
 
@@ -17,7 +18,7 @@ class Compiler {
 
   Compiler.fromPath(String path): this(JSON.decode(new File(path).readAsStringSync()));
 
-  _handleFunction(output, data, [prefix, binding = "this", codeStr]) {
+  _handleFunction(output, data, [prefix, binding = "this", codeStr, withSemicolon = true]) {
     if (prefix == null) output.write("function(");
     else output.write("$prefix.${data["name"]} = function(");
 
@@ -31,7 +32,7 @@ class Compiler {
 
       if(type.length > 0) {
         List<String> p = type.substring(1, type.length - 1).split(",")
-          ..removeWhere((piece) => piece.length == 0);
+            ..removeWhere((piece) => piece.length == 0);
         if (p == null || p.length == 0) {
           parameters = [];
         } else {
@@ -62,11 +63,20 @@ class Compiler {
               .map((e) => e.replaceAll(r"[\[\]\{\}]", ""))
               .map((e) => e.contains(" ") ? e.split(" ")[0] : "dynamic")
               .join(",")},${match.group(2)}";
-            } else if (piece.contains(" ")) {
-              actualName = piece.split(" ")[0];
-              piece = piece.split(" ")[1];
             } else {
-              name += "n";
+              var split = piece.split(" ");
+              if(split.length > 1) {
+                piece = split[0];
+                actualName = split[1];
+              } else {
+                if(!_allClasses.contains(split[0])) {
+                  piece = "dynamic";
+                  actualName = split[0];
+                } else {
+                  piece = split[0];
+                  name += "n";
+                }
+              }
             }
 
             return {
@@ -108,13 +118,15 @@ class Compiler {
       (codeStr != null ? codeStr : code.substring(code.indexOf(":") + 2)) +
       ").call($binding${paramString.length > 0 ? "," : ""}$paramString);");
       _base.transformFrom(output, "returned", _TYPE_REGEX.firstMatch(data["type"]).group(2));
-      output.write("return returned;};");
+      output.write("return returned;}");
+      if(withSemicolon)
+        output.write(";");
     }
   }
 
   _handleClassField(output, data, [prefix = "this"]) {
     var name = data["name"];
-    output.write("Object.defineProperty($prefix, $name, {");
+    output.write("Object.defineProperty($prefix, \"$name\", {");
 
     if (data["value"] != null) {
       output.write("enumerable: false");
@@ -133,6 +145,40 @@ class Compiler {
 
   _handleClass(output, data, prefix) {
     var name = data["name"];
+    if(name.startsWith("_"))
+      return;
+
+    var functions = [];
+    _handleClassChildren([isFromObj = false]) {
+      for (var child in data["children"]) {
+        child = child.split("/");
+
+        var type = child[0];
+        var id = child[1];
+
+        if (type == "function" && !isFromObj) {
+          var data = file["elements"][type][id];
+
+          if (data["kind"] == "constructor") {
+            if (data["code"] == null || data["code"].length == 0) continue;
+            output.write("(");
+            _handleFunction(output, data, null, "this.obj", null, false);
+            output.write(").apply(this, arguments);");
+            continue;
+          }
+
+          if(!data["name"].startsWith("_"))
+            functions.add(data);
+        }
+
+        if (type == "field") {
+          var data = file["elements"][type][id];
+          if(!data["name"].startsWith("_"))
+            _handleClassField(output, data);
+        }
+      }
+    }
+
     output.write("$prefix.$name = function $name() {");
 
     _handleClassField(output, {"name": "isWrapped", "value": "true"});
@@ -142,31 +188,8 @@ class Compiler {
       "value": "Object.create(init.allClasses.$name.prototype)"
     });
 
-    var functions = [];
-    for (var child in data["children"]) {
-      child = child.split("/");
+    _handleClassChildren();
 
-      var type = child[0];
-      var id = child[1];
-
-      if (type == "function") {
-        var data = file["elements"][type][id];
-
-        if (data["kind"] == "constructor") {
-          if (data["code"] == null || data["code"].length == 0) continue;
-          _handleFunction(output, data);
-          output.write(").apply(this.obj, arguments);");
-          continue;
-        }
-
-        functions.add(data);
-      }
-
-      if (type == "field") {
-        var data = file["elements"][type][id];
-        _handleClassField(output, data);
-      }
-    }
     output.write("};");
 
     for (var func in functions) {
@@ -183,6 +206,21 @@ class Compiler {
         "this.obj", "this.obj.${func["code"].split(":")[0]}");
       }
     }
+
+    output.write("$prefix.$name.fromObj = function $name(obj) {var returned = Object.create($prefix.$name.prototype);");
+    output.write("(function() {");
+
+    _handleClassField(output, {"name": "isWrapped", "value": "true"});
+
+    _handleClassField(output, {
+      "name": "obj",
+      "value": "obj"
+    });
+
+    _handleClassChildren(true);
+
+    output.write("}.bind(returned))();");
+    output.write("return returned;};");
   }
 
   String compile(List<String> libraries) {
@@ -190,16 +228,18 @@ class Compiler {
 
     var children = [];
     for (var library in file["elements"]["library"].values) {
+
+      for (var child in library["children"]) {
+        if (child.split("/")[0] == "class") {
+          if(libraries.contains(library["name"]))
+            _wrappedClasses[file["elements"]["class"][child.split("/")[1]]["name"]] = file["elements"]["class"][child.split("/")[1]];
+          _allClasses.add(file["elements"]["class"][child.split("/")[1]]["name"]);
+        }
+      }
+
       if (!libraries.contains(library["name"])) continue;
 
       children.addAll(library["children"]);
-    }
-
-    for (var child in children) {
-      if (child.split("/")[0] == "class") {
-        _wrappedClasses[file["elements"]["class"][child.split("/")[1]][
-        "name"]] = file["elements"]["class"][child.split("/")[1]];
-      }
     }
 
     for (var child in children) {

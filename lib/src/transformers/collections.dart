@@ -43,9 +43,9 @@ class CollectionsTransformer implements TypeTransformer {
         if(isJsMap) {
           output.write("var keys = $binding.keys(); var values = $binding.values();");
           output.write("keys.forEach(function(key, i) { var value = values[index];");
-          _handleTree(tree[1], "value");
+          _handleTree(tree[1], "value", "values");
           _handleTree(tree[2], "key", "keys");
-          output.write("}, values);");
+          output.write("});");
           output.write("var elms = keys.reduce(function(arr, key, index) { arr.push(key); arr.push(values[index]); return arr; }, []);");
         } else {
           if(tree.length > 2) {
@@ -81,9 +81,9 @@ class CollectionsTransformer implements TypeTransformer {
       if(isJsMap) {
         output.write("var keys = $name.keys(); var values = $name.values();");
         output.write("keys.forEach(function(key, i) { var value = values[index];");
-        _handleTree(tree[1], "value");
+        _handleTree(tree[1], "value", "values");
         _handleTree(tree[2], "key", "keys");
-        output.write("}, values);");
+        output.write("});");
         output.write("var elms = keys.reduce(function(arr, key, index) { arr.push(key); arr.push(values[index]); return arr; }, []);");
       } else {
         if(tree.length > 2) {
@@ -120,15 +120,15 @@ class CollectionsTransformer implements TypeTransformer {
           if(!globals.contains(_MAP_PREFIX))
             globals.add(_MAP_PREFIX);
           output.write("a = new \$Map();");
-          output.write("keys.forEach(function(key, index) { var value = values[index];");
-          _handleTree(tree[1], "key");
-          _handleTree(tree[2], "value");
-          output.write("a.set(key, values[index]); });");
+          output.write("keys.forEach(function(key, i) {");
+          _handleTree(tree[1], "key", "keys");
+          _handleTree(tree[2], "value", "values");
+          output.write("a.set(keys[i], values[i]); });");
         } else {
           output.write("a = {};");
           if (tree.length > 2)
             _handleTree(tree[2], "values");
-          output.write("keys.forEach(function(key, index) { a[key] = values[index]; });");
+          output.write("keys.forEach(function(key, i) { a[key] = values[i]; });");
         }
         output.write("return a");
         output.write("}($binding));");
@@ -149,10 +149,10 @@ class CollectionsTransformer implements TypeTransformer {
         if(!globals.contains(_MAP_PREFIX))
           globals.add(_MAP_PREFIX);
         output.write("$name = new \$Map();");
-        output.write("keys.forEach(function(key, index) { var value = values[index];");
-        _handleTree(tree[1], "key");
-        _handleTree(tree[2], "value");
-        output.write("$name.set(key, values[index]); });");
+        output.write("keys.forEach(function(key, i) {");
+        _handleTree(tree[1], "key", "keys");
+        _handleTree(tree[2], "value", "values");
+        output.write("$name.set(keys[i], values[i]); });");
       } else {
         output.write("$name = {};");
         if (tree.length > 2)
