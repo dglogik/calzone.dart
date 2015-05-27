@@ -144,12 +144,12 @@ class Compiler {
   }
 
   _handleClass(output, data, prefix) {
-    var name = data["name"];
-    if(name.startsWith("_"))
-      return;
-
     var functions = [];
     _handleClassChildren([isFromObj = false]) {
+      List<String> accessors = [];
+      Map<String, Map> getters = {};
+      Map<String, Map> setters = {};
+
       for (var child in data["children"]) {
         child = child.split("/");
 
@@ -158,6 +158,10 @@ class Compiler {
 
         if (type == "function" && !isFromObj) {
           var data = file["elements"][type][id];
+          var name = data["name"];
+
+          if(name.startsWith("_"))
+            continue;
 
           if (data["kind"] == "constructor") {
             if (data["code"] == null || data["code"].length == 0) continue;
@@ -167,7 +171,21 @@ class Compiler {
             continue;
           }
 
-          if(!data["name"].startsWith("_"))
+          if(data["code"].startsWith("set\$")) {
+            if(!accessors.contains(name))
+              accessors.add(name);
+            setters[name] = data;
+            continue;
+          }
+
+          if(data["code"].startsWith("get\$")) {
+            if(!accessors.contains(name))
+              accessors.add(name);
+            getters[name] = data;
+            continue;
+          }
+
+          if(data["code"].length > 0)
             functions.add(data);
         }
 
@@ -177,7 +195,34 @@ class Compiler {
             _handleClassField(output, data);
         }
       }
+
+      for(var accessor in accessors) {
+        output.write("Object.defineProperty(this, \"$accessor\", {");
+
+        output.write("enumerable: true");
+        if(getters[accessor] != null) {
+          output.write(",get: function() { var returned = (");
+          _handleFunction(output, getters[accessor], null, "this.obj", null, false);
+          output.write(").apply(this, arguments);");
+          _base.transformFrom(output, "returned", getters[accessor]["type"]);
+          output.write("return returned;}");
+        }
+
+        if(setters[accessor] != null) {
+          output.write(",set: function(v) {");
+          _base.transformTo(output, "v", setters[accessor]["type"]);
+          output.write("(");
+          _handleFunction(output, setters[accessor], null, "this.obj", null, false);
+          output.write(").call(this, v);}");
+        }
+
+        output.write("});");
+      }
     }
+
+    var name = data["name"];
+    if(name.startsWith("_"))
+      return;
 
     output.write("$prefix.$name = function $name() {");
 
