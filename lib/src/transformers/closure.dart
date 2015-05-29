@@ -1,7 +1,5 @@
 part of calzone.transformers;
 
-// "type": "((T) -> dynamic, {Function onError}) -> Future",
-
 // Closure transformer to Dart closures
 class ClosureTransformer implements TypeTransformer {
   final List<String> types = ["Function"];

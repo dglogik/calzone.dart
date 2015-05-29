@@ -12,12 +12,12 @@ class PromiseTransformer implements TypeTransformer {
 
   @override
   transformToDart(StringBuffer output, TypeTransformer base, String name, List tree, List<String> globals) {
-    output.write("var completer = new P._SyncCompleter(new P._Future(0, \$.Zone__current, null))");
-    output.write("$name.then((then) {");
+    output.write("var completer = new P._SyncCompleter(new P._Future(0, \$.Zone__current, null));");
+    output.write("$name.then(function(then) {");
     if(tree.length > 1)
       base.transformToDart(output, base, "then", tree[1], globals);
-    output.write("completer.complete\$1(then);}).catch(function(err) {completer.completeError\$1(err};)");
-    output.write("$name = completer.future");
+    output.write("completer.complete\$1(then);}).catch(function(err) {completer.completeError\$1(err);});");
+    output.write("$name = completer.future;");
   }
 
   @override

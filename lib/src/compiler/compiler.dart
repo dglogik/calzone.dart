@@ -22,79 +22,77 @@ class Compiler {
     if (prefix == null) output.write("function(");
     else output.write("$prefix.${data["name"]} = function(");
 
-    List<Map> parameters = data["parameters"];
-    if (parameters.length == 0) {
-      // needs work
-      String name = "\$n";
-      String type = _TYPE_REGEX.firstMatch(data["type"]).group(1);
-      var isOptional = false;
-      var isPositional = false;
+    List<Map> parameters = [];
+    String nameTemplate = "\$n";
+    String type = _TYPE_REGEX.firstMatch(data["type"]).group(1);
 
-      if(type.length > 0) {
-        List<String> p = type.substring(1, type.length - 1).split(",")
-            ..removeWhere((piece) => piece.length == 0);
-        if (p == null || p.length == 0) {
-          parameters = [];
-        } else {
-          parameters = p.map((String piece) {
-            piece = piece.trim();
+    var isOptional = false;
+    var isPositional = false;
 
-            if (piece.startsWith("[")) {
-              isPositional = true;
-              piece = piece.substring(1);
-            }
-            if (piece.endsWith("]")) {
-              isPositional = false;
-              piece = piece.substring(0, piece.length - 1);
-            }
-            if (piece.startsWith("{")) {
-              isOptional = true;
-              piece = piece.substring(1);
-            }
-            if (piece.endsWith("}")) {
-              isOptional = false;
-              piece = piece.substring(0, piece.length - 1);
-            }
+    if(type.length > 0) {
+      List<String> p = type.split(",")
+          ..removeWhere((piece) => piece.length == 0);
+      if (p == null || p.length == 0) {
+        parameters = [];
+      } else {
+        parameters = p.map((String piece) {
+          piece = piece.trim();
 
-            var actualName = null;
-            var match = _TYPE_REGEX.firstMatch(piece);
-            if (match != null) {
-              piece = "Function<${match.group(1).split(",")
-              .map((e) => e.replaceAll(r"[\[\]\{\}]", ""))
-              .map((e) => e.contains(" ") ? e.split(" ")[0] : "dynamic")
-              .join(",")},${match.group(2)}";
+          if (piece.endsWith("]")) {
+            isPositional = false;
+            piece = piece.substring(0, piece.length - 1);
+          }
+          if (piece.startsWith("[")) {
+            isPositional = true;
+            piece = piece.substring(1);
+          }
+          if (piece.endsWith("}")) {
+            isOptional = false;
+            piece = piece.substring(0, piece.length - 1);
+          }
+          if (piece.startsWith("{")) {
+            isOptional = true;
+            piece = piece.substring(1);
+          }
+
+          var actualName = null;
+          var match = _TYPE_REGEX.firstMatch(piece);
+          if (match != null) {
+            piece = "Function<${match.group(1).split(",")
+                .map((e) => e.replaceAll(r"[\[\]\{\}]", ""))
+                .map((e) => e.contains(" ") ? e.split(" ")[0] : "dynamic")
+                .join(",")},${match.group(2)}";
+          } else {
+            var split = piece.split(" ");
+            if(split.length > 1) {
+              piece = split[0];
+              actualName = split[1];
             } else {
-              var split = piece.split(" ");
-              if(split.length > 1) {
-                piece = split[0];
-                actualName = split[1];
+              if(!_allClasses.contains(split[0])) {
+                piece = "dynamic";
+                actualName = split[0];
               } else {
-                if(!_allClasses.contains(split[0])) {
-                  piece = "dynamic";
-                  actualName = split[0];
-                } else {
-                  piece = split[0];
-                  name += "n";
-                }
+                piece = split[0];
+                nameTemplate += "n";
+                actualName = nameTemplate;
               }
             }
+          }
 
-            return {
-              "name": actualName != null ? actualName : name,
-              "declaredType": piece,
-              "isPositional": isPositional,
-              "isOptional": isOptional
-            };
-          });
-        }
+          return {
+            "name": actualName,
+            "declaredType": piece,
+            "isPositional": isPositional,
+            "isOptional": isOptional
+          };
+        });
       }
     }
-    var paramString = parameters.map((param) {
-      return param["name"];
-    }).join(",");
+
+    var paramStringList = parameters.toList()..removeWhere((param) => param.containsKey("isOptional") && param["isOptional"]);
+    var paramString = paramStringList.map((param) => param["name"]).join(",");
     output.write("$paramString");
-    if (parameters.any(
-            (param) => param.containsKey("isOptional") && param["isOptional"])) {
+    if (parameters.any((param) => param.containsKey("isOptional") && param["isOptional"])) {
       if (paramString.length > 0) output.write(",");
       output.write("_optObj_");
     }
@@ -109,14 +107,13 @@ class Compiler {
         if (param.containsKey("isPositional") && param["isPositional"]) output
         .write("$name = typeof($name) === 'undefined' ? null : $name;");
         if (param.containsKey("isOptional") && param["isOptional"]) output.write(
-            "var $name = typeof(_optObj_[$name]) === 'undefined' ? null : _optObj_[$name]");
+            "var $name = typeof(_optObj_.$name) === 'undefined' ? null : _optObj_.$name;");
 
         _base.transformTo(output, name, declaredType);
       }
 
-      output.write("var returned=(" +
-      (codeStr != null ? codeStr : code.substring(code.indexOf(":") + 2)) +
-      ").call($binding${paramString.length > 0 ? "," : ""}$paramString);");
+      code = codeStr != null ? codeStr : (code.trim().startsWith(":") == false ? "$binding." + code.substring(0, code.indexOf(":") - 1) : code.substring(code.indexOf(":") + 2));
+      output.write("var returned=($code).call($binding${paramString.length > 0 ? "," : ""}$paramString);");
       _base.transformFrom(output, "returned", _TYPE_REGEX.firstMatch(data["type"]).group(2));
       output.write("return returned;}");
       if(withSemicolon)
@@ -144,6 +141,11 @@ class Compiler {
   }
 
   _handleClass(output, data, prefix) {
+    var name = data["name"];
+    var className = name;
+    if(name.startsWith("_"))
+      return;
+
     var functions = [];
     _handleClassChildren([isFromObj = false]) {
       List<String> accessors = [];
@@ -164,9 +166,9 @@ class Compiler {
             continue;
 
           if (data["kind"] == "constructor") {
-            if (data["code"] == null || data["code"].length == 0) continue;
             output.write("(");
-            _handleFunction(output, data, null, "this.obj", null, false);
+
+            _handleFunction(output, data, null, "this.obj", "init.allClasses.$className", false);
             output.write(").apply(this, arguments);");
             continue;
           }
@@ -220,10 +222,6 @@ class Compiler {
       }
     }
 
-    var name = data["name"];
-    if(name.startsWith("_"))
-      return;
-
     output.write("$prefix.$name = function $name() {");
 
     _handleClassField(output, {"name": "isWrapped", "value": "true"});
@@ -276,8 +274,9 @@ class Compiler {
 
       for (var child in library["children"]) {
         if (child.split("/")[0] == "class") {
-          if(libraries.contains(library["name"]))
+          if(libraries.contains(library["name"])) {
             _wrappedClasses[file["elements"]["class"][child.split("/")[1]]["name"]] = file["elements"]["class"][child.split("/")[1]];
+          }
           _allClasses.add(file["elements"]["class"][child.split("/")[1]]["name"]);
         }
       }
