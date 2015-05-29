@@ -4,9 +4,6 @@ import "package:args/args.dart";
 
 import "dart:io";
 
-// Use like this
-// calpatcher something.js --target={browser,node}
-
 main(List<String> args) async {
   var parser = new ArgParser();
 
@@ -24,14 +21,6 @@ main(List<String> args) async {
 
   List<String> data = file.readAsLinesSync();
 
-  var index = data.length;
-  for(var line in data.reversed) {
-    index--;
-    if(line.contains("// END invoke [main].")) {
-      data.insertAll(index, new File(results["wrapper"]).readAsLinesSync());
-      break;
-    }
-  }
-
+  data.insertAll(data.indexOf("// END invoke [main]."), new File(results["wrapper"]).readAsLinesSync());
   print(data.join("\n"));
 }

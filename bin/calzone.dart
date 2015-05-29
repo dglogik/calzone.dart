@@ -8,5 +8,6 @@ main(List<String> args) {
 
   print(
   compiler.compile(args.sublist(1))
+  // ;
   );
 }

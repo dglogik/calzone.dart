@@ -25,8 +25,9 @@ class Compiler {
     else output.write("$prefix.${data["name"]} = function(");
 
     List<Map> parameters = [];
-    String nameTemplate = "\$n";
     String type = _TYPE_REGEX.firstMatch(data["type"]).group(1);
+
+    int paramNameIndex = 1;
 
     var isOptional = false;
     var isPositional = false;
@@ -40,21 +41,20 @@ class Compiler {
         parameters = p.map((String piece) {
           piece = piece.trim();
 
-          if (piece.endsWith("]")) {
-            isPositional = false;
-            piece = piece.substring(0, piece.length - 1);
-          }
           if (piece.startsWith("[")) {
             isPositional = true;
             piece = piece.substring(1);
           }
-          if (piece.endsWith("}")) {
-            isOptional = false;
+          if (piece.endsWith("]")) {
             piece = piece.substring(0, piece.length - 1);
           }
+
           if (piece.startsWith("{")) {
             isOptional = true;
             piece = piece.substring(1);
+          }
+          if (piece.endsWith("}")) {
+            piece = piece.substring(0, piece.length - 1);
           }
 
           var match = _TYPE_REGEX.firstMatch(piece);
@@ -89,8 +89,8 @@ class Compiler {
               actualName = c;
             } else {
               piece = split[0];
-              nameTemplate += "n";
-              actualName = nameTemplate;
+              paramNameIndex++;
+              actualName = "\$" + ("n" * paramNameIndex);
             }
           }
 
@@ -100,18 +100,21 @@ class Compiler {
             "isPositional": isPositional,
             "isOptional": isOptional
           };
-        });
+        }).toList();
       }
     }
 
-    var paramStringList = parameters.toList()..removeWhere((param) => param.containsKey("isOptional") && param["isOptional"]);
+    var paramStringList = []..addAll(parameters);
+    paramStringList.removeWhere((param) => param.containsKey("isOptional") && param["isOptional"]);
+
     var paramString = paramStringList.map((param) => param["name"]).join(",");
     output.write("$paramString");
     if (parameters.any((param) => param.containsKey("isOptional") && param["isOptional"])) {
       if (paramString.length > 0) output.write(",");
-      output.write("_optObj_");
+      output.write("_optObj_){_optObj_ = _optObj_ || {};");
+    } else {
+      output.write("){");
     }
-    output.write("){");
 
     String code = data["code"];
     if (codeStr != null || code != null && code.length > 0) {
@@ -119,16 +122,28 @@ class Compiler {
         var name = param["name"];
         var declaredType = param["declaredType"];
 
-        if (param.containsKey("isPositional") && param["isPositional"]) output
-        .write("$name = typeof($name) === 'undefined' ? null : $name;");
-        if (param.containsKey("isOptional") && param["isOptional"]) output.write(
-            "var $name = typeof(_optObj_.$name) === 'undefined' ? null : _optObj_.$name;");
+        var isPositional = param.containsKey("isPositional") && param["isPositional"];
+        var isOptional = param.containsKey("isOptional") && param["isOptional"];
+
+        if (isPositional)
+          output.write("$name = typeof($name) === 'undefined' ? null : $name;");
+        if (isOptional)
+          output.write("var $name = typeof(_optObj_.$name) === 'undefined' ? null : _optObj_.$name;");
+
+        if(isPositional || isOptional)
+          output.write("if($name !== null) {");
 
         _base.transformTo(output, name, declaredType);
+
+        if(isPositional || isOptional)
+          output.write("}");
       }
 
       code = codeStr != null ? codeStr : (code.trim().startsWith(":") == false ? "$binding." + code.substring(0, code.indexOf(":") - 1) : code.substring(code.indexOf(":") + 2));
-      output.write("var returned=($code).call($binding${paramString.length > 0 ? "," : ""}$paramString);");
+
+      var fullParamString = parameters.map((p) => p["name"]).join(",");
+
+      output.write("var returned=($code).call($binding${paramString.length > 0 ? "," : ""}$fullParamString);");
       _base.transformFrom(output, "returned", _TYPE_REGEX.firstMatch(data["type"]).group(2));
       output.write("return returned;}");
       if(withSemicolon)
