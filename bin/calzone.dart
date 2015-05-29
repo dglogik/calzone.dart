@@ -6,5 +6,7 @@ main(List<String> args) {
 
   compiler.typeTransformers.addAll([new CollectionsTransformer(), new PromiseTransformer(true), new ClosureTransformer()]);
 
-  print(compiler.compile(args.sublist(1)));
+  print(
+  compiler.compile(args.sublist(1))
+  );
 }

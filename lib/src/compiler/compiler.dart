@@ -1,6 +1,8 @@
 part of calzone.compiler;
 
-RegExp _TYPE_REGEX = new RegExp(r"\(([^]*)\) -> ([^]*)");
+RegExp _TYPE_REGEX = new RegExp(r"\(([^]*)\) -> ([^]+)");
+RegExp _COMMA_REGEX = new RegExp(r",(?!([^(<]+[)>]))");
+RegExp _SPACE_REGEX = new RegExp(r" (?!([^(<]+[)>]))");
 
 class Compiler {
   final Map<String, dynamic> file;
@@ -30,8 +32,8 @@ class Compiler {
     var isPositional = false;
 
     if(type.length > 0) {
-      List<String> p = type.split(",")
-          ..removeWhere((piece) => piece.length == 0);
+      List<String> p = type.split(_COMMA_REGEX)
+          ..removeWhere((piece) => piece.trim().length == 0);
       if (p == null || p.length == 0) {
         parameters = [];
       } else {
@@ -55,27 +57,40 @@ class Compiler {
             piece = piece.substring(1);
           }
 
-          var actualName = null;
           var match = _TYPE_REGEX.firstMatch(piece);
-          if (match != null) {
-            piece = "Function<${match.group(1).split(",")
-                .map((e) => e.replaceAll(r"[\[\]\{\}]", ""))
-                .map((e) => e.contains(" ") ? e.split(" ")[0] : "dynamic")
-                .join(",")},${match.group(2)}";
+          if(match != null) {
+            List functionParams = match.group(1).split(",")
+                .map((e) => e.replaceAll(r"[\[\]\{\}]", "").trim())
+                .where((e) => e.length > 0)
+                .map((e) => e.contains(" ") ? e.split(" ")[0] : (_allClasses.contains(_getTypeTree(e)[0]) ? e : "dynamic")).toList();
+
+            var name = "";
+            var groupParts = match.group(2).split(" ");
+            if (groupParts.length > 1 && !groupParts.last.contains(">") && !groupParts.last.contains(")")) {
+              name = " " + groupParts.last;
+              groupParts = groupParts.sublist(0, groupParts.length - 1);
+            }
+
+            functionParams.add(groupParts.join(" "));
+            piece = piece.substring(0, match.start) + "Function<${functionParams.join(",")}>$name" + piece.substring(match.end);
+          }
+
+          var actualName = null;
+          var split = piece.split(_SPACE_REGEX);
+          if(split.length > 1) {
+            if(split[1].endsWith(">"))
+              throw new StateError(piece);
+            piece = split[0];
+            actualName = split[1];
           } else {
-            var split = piece.split(" ");
-            if(split.length > 1) {
-              piece = split[0];
-              actualName = split[1];
+            var c = _getTypeTree(split[0])[0];
+            if(c != "Function" && !_allClasses.contains(c)) {
+              piece = "dynamic";
+              actualName = c;
             } else {
-              if(!_allClasses.contains(split[0])) {
-                piece = "dynamic";
-                actualName = split[0];
-              } else {
-                piece = split[0];
-                nameTemplate += "n";
-                actualName = nameTemplate;
-              }
+              piece = split[0];
+              nameTemplate += "n";
+              actualName = nameTemplate;
             }
           }
 

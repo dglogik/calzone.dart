@@ -4,6 +4,9 @@ homepage: https://github.com/DirectMyFile/calzone.dart
 version: 0.1.0
 environment:
   sdk: '>=1.10.0 <2.0.0'
+dependencies:
+  args: "^0.13.1"
 description: Use Dart libraries from JavaScript.
 executables:
   calzone: calzone
+  calpatcher: calpatcher
