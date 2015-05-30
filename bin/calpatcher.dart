@@ -43,7 +43,8 @@ main(List<String> args) async {
   }
 
   var index = data.length;
-  for (var line in data.reversed) {
+  var reversed = []..addAll(data.reversed);
+  for (var line in reversed) {
     index--;
     if (line.contains("// END invoke [main].")) {
       data.insertAll(index, new File(results["wrapper"]).readAsLinesSync());

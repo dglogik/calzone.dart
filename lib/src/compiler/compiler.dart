@@ -18,9 +18,11 @@ class Compiler {
     _base = new BaseTypeTransformer(this);
   }
 
-  Compiler.fromPath(String path): this(JSON.decode(new File(path).readAsStringSync()));
+  Compiler.fromPath(String path)
+      : this(JSON.decode(new File(path).readAsStringSync()));
 
-  _handleFunction(output, data, [prefix, binding = "this", codeStr, withSemicolon = true]) {
+  _handleFunction(output, data, [prefix, binding = "this", codeStr,
+      withSemicolon = true, transformResult = true]) {
     if (prefix == null) output.write("function(");
     else output.write("$prefix.${data["name"]} = function(");
 
@@ -32,9 +34,9 @@ class Compiler {
     var isOptional = false;
     var isPositional = false;
 
-    if(type.length > 0) {
+    if (type.length > 0) {
       List<String> p = type.split(_COMMA_REGEX)
-          ..removeWhere((piece) => piece.trim().length == 0);
+        ..removeWhere((piece) => piece.trim().length == 0);
       if (p == null || p.length == 0) {
         parameters = [];
       } else {
@@ -58,33 +60,44 @@ class Compiler {
           }
 
           var match = _TYPE_REGEX.firstMatch(piece);
-          if(match != null) {
-            List functionParams = match.group(1).split(",")
-                .map((e) => e.replaceAll(r"[\[\]\{\}]", "").trim())
-                .where((e) => e.length > 0)
-                .map((e) => e.contains(" ") ? e.split(" ")[0] : (_allClasses.contains(_getTypeTree(e)[0]) ? e : "dynamic")).toList();
+          if (match != null) {
+            List functionParams =
+                match
+                    .group(1)
+                    .split(",")
+                    .map((e) => e.replaceAll(r"[\[\]\{\}]", "").trim())
+                    .where((e) => e.length > 0)
+                    .map((e) => e.contains(" ")
+                        ? e.split(" ")[0]
+                        : (_allClasses.contains(_getTypeTree(e)[0])
+                            ? e
+                            : "dynamic"))
+                    .toList();
 
             var name = "";
             var groupParts = match.group(2).split(" ");
-            if (groupParts.length > 1 && !groupParts.last.contains(">") && !groupParts.last.contains(")")) {
+            if (groupParts.length > 1 &&
+                !groupParts.last.contains(">") &&
+                !groupParts.last.contains(")")) {
               name = " " + groupParts.last;
               groupParts = groupParts.sublist(0, groupParts.length - 1);
             }
 
             functionParams.add(groupParts.join(" "));
-            piece = piece.substring(0, match.start) + "Function<${functionParams.join(",")}>$name" + piece.substring(match.end);
+            piece = piece.substring(0, match.start) +
+                "Function<${functionParams.join(",")}>$name" +
+                piece.substring(match.end);
           }
 
           var actualName = null;
           var split = piece.split(_SPACE_REGEX);
-          if(split.length > 1) {
-            if(split[1].endsWith(">"))
-              throw new StateError(piece);
+          if (split.length > 1) {
+            if (split[1].endsWith(">")) throw new StateError(piece);
             piece = split[0];
             actualName = split[1];
           } else {
             var c = _getTypeTree(split[0])[0];
-            if(c != "Function" && !_allClasses.contains(c)) {
+            if (c != "Function" && !_allClasses.contains(c)) {
               piece = "dynamic";
               actualName = c;
             } else {
@@ -105,11 +118,13 @@ class Compiler {
     }
 
     var paramStringList = []..addAll(parameters);
-    paramStringList.removeWhere((param) => param.containsKey("isOptional") && param["isOptional"]);
+    paramStringList.removeWhere(
+        (param) => param.containsKey("isOptional") && param["isOptional"]);
 
     var paramString = paramStringList.map((param) => param["name"]).join(",");
     output.write("$paramString");
-    if (parameters.any((param) => param.containsKey("isOptional") && param["isOptional"])) {
+    if (parameters.any(
+        (param) => param.containsKey("isOptional") && param["isOptional"])) {
       if (paramString.length > 0) output.write(",");
       output.write("_optObj_){_optObj_ = _optObj_ || {};");
     } else {
@@ -122,32 +137,37 @@ class Compiler {
         var name = param["name"];
         var declaredType = param["declaredType"];
 
-        var isPositional = param.containsKey("isPositional") && param["isPositional"];
+        var isPositional =
+            param.containsKey("isPositional") && param["isPositional"];
         var isOptional = param.containsKey("isOptional") && param["isOptional"];
 
-        if (isPositional)
-          output.write("$name = typeof($name) === 'undefined' ? null : $name;");
-        if (isOptional)
-          output.write("var $name = typeof(_optObj_.$name) === 'undefined' ? null : _optObj_.$name;");
+        if (isPositional) output
+            .write("$name = typeof($name) === 'undefined' ? null : $name;");
+        if (isOptional) output.write(
+            "var $name = typeof(_optObj_.$name) === 'undefined' ? null : _optObj_.$name;");
 
-        if(isPositional || isOptional)
-          output.write("if($name !== null) {");
+        if (isPositional || isOptional) output.write("if($name !== null) {");
 
         _base.transformTo(output, name, declaredType);
 
-        if(isPositional || isOptional)
-          output.write("}");
+        if (isPositional || isOptional) output.write("}");
       }
 
-      code = codeStr != null ? codeStr : (code.trim().startsWith(":") == false ? "$binding." + code.substring(0, code.indexOf(":") - 1) : code.substring(code.indexOf(":") + 2));
+      code =
+          codeStr != null
+              ? codeStr
+              : (code.trim().startsWith(":") == false
+                  ? "$binding." + code.substring(0, code.indexOf(":") - 1)
+                  : code.substring(code.indexOf(":") + 2));
 
       var fullParamString = parameters.map((p) => p["name"]).join(",");
 
-      output.write("var returned=($code).call($binding${paramString.length > 0 ? "," : ""}$fullParamString);");
-      _base.transformFrom(output, "returned", _TYPE_REGEX.firstMatch(data["type"]).group(2));
+      output.write(
+          "var returned=($code).call($binding${paramString.length > 0 ? "," : ""}$fullParamString);");
+      if (transformResult) _base.transformFrom(
+          output, "returned", _TYPE_REGEX.firstMatch(data["type"]).group(2));
       output.write("return returned;}");
-      if(withSemicolon)
-        output.write(";");
+      if (withSemicolon) output.write(";");
     }
   }
 
@@ -160,11 +180,11 @@ class Compiler {
       output.write(",value: ${data["value"]}");
     } else {
       output.write("enumerable: ${(!name.startsWith("_"))}");
-      output.write(",get: function() { var returned = this.obj.$name;");
+      output.write(",get: function() { var returned = this.__obj__.$name;");
       _base.transformFrom(output, "returned", data["type"]);
       output.write("return returned;},set: function(v) {");
       _base.transformTo(output, "v", data["type"]);
-      output.write("this.obj.$name = v;}");
+      output.write("this.__obj__.$name = v;}");
     }
 
     output.write("});");
@@ -172,8 +192,7 @@ class Compiler {
 
   _handleClass(output, data, prefix) {
     var name = data["name"];
-    if(name.startsWith("_"))
-      return;
+    if (name.startsWith("_")) return;
 
     var functions = [];
     _handleClassChildren([isFromObj = false]) {
@@ -191,62 +210,62 @@ class Compiler {
           var data = file["elements"][type][id];
           var name = data["name"];
 
-          if(name.startsWith("_"))
-            continue;
+          if (name.startsWith("_")) continue;
 
           if (data["kind"] == "constructor") {
-            output.write("Object.defineProperty(this, 'obj', {");
+            output.write("Object.defineProperty(this, '__obj__', {");
             output.write("enumerable: false, value: (");
-            var code = data["code"] == null || data["code"].length == 0 ? "function(){}" :
-                "(" + data["code"].substring(data["code"].indexOf(":") + 2) + "[0])";
-            _handleFunction(output, data, null, "this", code, false);
+            var code = data["code"] == null || data["code"].length == 0
+                ? "function(){}"
+                : "(" +
+                    data["code"].substring(data["code"].indexOf(":") + 2) +
+                    "[0])";
+            _handleFunction(output, data, null, "this", code, false, false);
             output.write(").apply(this, arguments)");
             output.write("});");
             continue;
           }
 
-          if(data["code"].startsWith("set\$")) {
-            if(!accessors.contains(name))
-              accessors.add(name);
+          if (data["code"].startsWith("set\$")) {
+            if (!accessors.contains(name)) accessors.add(name);
             setters[name] = data;
             continue;
           }
 
-          if(data["code"].startsWith("get\$")) {
-            if(!accessors.contains(name))
-              accessors.add(name);
+          if (data["code"].startsWith("get\$")) {
+            if (!accessors.contains(name)) accessors.add(name);
             getters[name] = data;
             continue;
           }
 
-          if(data["code"].length > 0)
-            functions.add(data);
+          if (data["code"].length > 0) functions.add(data);
         }
 
         if (type == "field") {
           var data = file["elements"][type][id];
-          if(!data["name"].startsWith("_"))
-            _handleClassField(output, data);
+          if (!data["name"].startsWith("_")) _handleClassField(output, data);
         }
       }
 
-      for(var accessor in accessors) {
+      for (var accessor in accessors) {
         output.write("Object.defineProperty(this, \"$accessor\", {");
 
         output.write("enumerable: true");
-        if(getters[accessor] != null) {
+        if (getters[accessor] != null) {
           output.write(",get: function() { var returned = (");
-          _handleFunction(output, getters[accessor], null, "this.obj", null, false);
+          _handleFunction(
+              output, getters[accessor], null, "this.__obj__", null, false);
           output.write(").apply(this, arguments);");
           _base.transformFrom(output, "returned", getters[accessor]["type"]);
           output.write("return returned;}");
         }
 
-        if(setters[accessor] != null) {
+        if (setters[accessor] != null) {
           output.write(",set: function(v) {");
           _base.transformTo(output, "v", setters[accessor]["type"]);
           output.write("(");
-          _handleFunction(output, setters[accessor], null, "this.obj", null, false);
+          _handleFunction(
+              output, setters[accessor], null, "this.__obj__", null, false);
           output.write(").call(this, v);}");
         }
 
@@ -256,35 +275,34 @@ class Compiler {
 
     output.write("$prefix.$name = function $name() {");
 
-    _handleClassField(output, {"name": "isWrapped", "value": "true"});
+    _handleClassField(output, {"name": "__isWrapped__", "value": "true"});
+
     _handleClassChildren();
 
     output.write("};");
 
     for (var func in functions) {
       if (_NAME_REPLACEMENTS.containsKey(func["name"]) &&
-      !functions
-      .map((f) => f["name"])
-      .contains(_NAME_REPLACEMENTS[func["name"]])) func["name"] =
-      _NAME_REPLACEMENTS[func["name"]];
+          !functions
+              .map((f) => f["name"])
+              .contains(_NAME_REPLACEMENTS[func["name"]])) func["name"] =
+          _NAME_REPLACEMENTS[func["name"]];
       if (func["modifiers"]["static"] || func["modifiers"]["factory"]) {
         _handleFunction(output, func, "module.exports.$name", "this",
-        "init.allClasses.$name.${func["code"].split(":")[0]}");
+            "init.allClasses.$name.${func["code"].split(":")[0]}");
       } else {
         _handleFunction(output, func, "module.exports.$name.prototype",
-        "this.obj", "this.obj.${func["code"].split(":")[0]}");
+            "this.__obj__", "this.__obj__.${func["code"].split(":")[0]}");
       }
     }
 
-    output.write("$prefix.$name.fromObj = function $name(obj) {var returned = Object.create($prefix.$name.prototype);");
+    output.write(
+        "$prefix.$name.fromObj = function $name(__obj__) {var returned = Object.create($prefix.$name.prototype);");
     output.write("(function() {");
 
-    _handleClassField(output, {"name": "isWrapped", "value": "true"});
+    _handleClassField(output, {"name": "__isWrapped__", "value": "true"});
 
-    _handleClassField(output, {
-      "name": "obj",
-      "value": "obj"
-    });
+    _handleClassField(output, {"name": "__obj__", "value": "__obj__"});
 
     _handleClassChildren(true);
 
@@ -297,13 +315,14 @@ class Compiler {
 
     var children = [];
     for (var library in file["elements"]["library"].values) {
-
       for (var child in library["children"]) {
         if (child.split("/")[0] == "class") {
-          if(libraries.contains(library["name"])) {
-            _wrappedClasses[file["elements"]["class"][child.split("/")[1]]["name"]] = file["elements"]["class"][child.split("/")[1]];
+          if (libraries.contains(library["name"])) {
+            _wrappedClasses[file["elements"]["class"][child.split("/")[1]][
+                "name"]] = file["elements"]["class"][child.split("/")[1]];
           }
-          _allClasses.add(file["elements"]["class"][child.split("/")[1]]["name"]);
+          _allClasses
+              .add(file["elements"]["class"][child.split("/")[1]]["name"]);
         }
       }
 

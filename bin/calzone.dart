@@ -4,10 +4,13 @@ import "package:calzone/transformers.dart";
 main(List<String> args) {
   var compiler = new Compiler.fromPath(args[0]);
 
-  compiler.typeTransformers.addAll([new CollectionsTransformer(), new PromiseTransformer(true), new ClosureTransformer()]);
+  compiler.typeTransformers.addAll([
+    new CollectionsTransformer(true),
+    new PromiseTransformer(true),
+    new ClosureTransformer()
+  ]);
 
-  print(
-  compiler.compile(args.sublist(1))
-  // ;
-  );
+  print(compiler.compile(args.sublist(1))
+      // ;
+      );
 }
