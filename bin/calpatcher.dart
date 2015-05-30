@@ -21,6 +21,42 @@ main(List<String> args) async {
 
   List<String> data = file.readAsLinesSync();
 
-  data.insertAll(data.indexOf("// END invoke [main]."), new File(results["wrapper"]).readAsLinesSync());
+  if(results["target"] == "node") {
+    // node preamble
+    data.insert(0, """
+    global.location = { href: "file://" + process.cwd() + "/" };
+    global.scheduleImmediate = setImmediate;
+    global.self = global;
+    global.require = require;
+
+    // Support for deferred loading.
+    global.dartDeferredLibraryLoader = function(uri, successCallback, errorCallback) {
+      try {
+        load(uri);
+        successCallback();
+      } catch (error) {
+        errorCallback(error);
+      }
+    };
+    """);
+  }
+
+  var index = data.length;
+  for(var line in data.reversed) {
+    index--;
+    if(line.contains("// END invoke [main].")) {
+      data.insertAll(index, new File(results["wrapper"]).readAsLinesSync());
+      isPatched = true;
+      continue;
+    }
+
+    if(line.contains("main: [function(args) {")) {
+      isMainRemoved = true;
+      data.removeRange(index + 1, index + 4);
+      if(isPatched && isMainRemoved)
+        break;
+    }
+  }
+
   print(data.join("\n"));
 }
