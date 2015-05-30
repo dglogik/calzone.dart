@@ -46,15 +46,13 @@ main(List<String> args) async {
     index--;
     if(line.contains("// END invoke [main].")) {
       data.insertAll(index, new File(results["wrapper"]).readAsLinesSync());
-      isPatched = true;
       continue;
     }
 
     if(line.contains("main: [function(args) {")) {
       isMainRemoved = true;
       data.removeRange(index + 1, index + 4);
-      if(isPatched && isMainRemoved)
-        break;
+]     break;
     }
   }
 
