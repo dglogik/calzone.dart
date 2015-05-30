@@ -7,11 +7,12 @@ import "dart:io";
 main(List<String> args) async {
   var parser = new ArgParser();
 
-  parser.addOption("target", abbr: "t", defaultsTo: "browser", allowed: ["browser", "node"]);
+  parser.addOption("target",
+      abbr: "t", defaultsTo: "browser", allowed: ["browser", "node"]);
   parser.addOption("file", abbr: "f");
   parser.addOption("wrapper", abbr: "w");
 
-  if(args.length == 0) {
+  if (args.length == 0) {
     print(parser.usage);
     return;
   }
@@ -21,7 +22,7 @@ main(List<String> args) async {
 
   List<String> data = file.readAsLinesSync();
 
-  if(results["target"] == "node") {
+  if (results["target"] == "node") {
     // node preamble
     data.insert(0, """
     global.location = { href: "file://" + process.cwd() + "/" };
@@ -42,17 +43,16 @@ main(List<String> args) async {
   }
 
   var index = data.length;
-  for(var line in data.reversed) {
+  for (var line in data.reversed) {
     index--;
-    if(line.contains("// END invoke [main].")) {
+    if (line.contains("// END invoke [main].")) {
       data.insertAll(index, new File(results["wrapper"]).readAsLinesSync());
       continue;
     }
 
-    if(line.contains("main: [function(args) {")) {
-      isMainRemoved = true;
+    if (line.contains("main: [function(args) {")) {
       data.removeRange(index + 1, index + 4);
-]     break;
+      break;
     }
   }
 
