@@ -172,7 +172,6 @@ class Compiler {
 
   _handleClass(output, data, prefix) {
     var name = data["name"];
-    var className = name;
     if(name.startsWith("_"))
       return;
 
@@ -196,10 +195,13 @@ class Compiler {
             continue;
 
           if (data["kind"] == "constructor") {
-            output.write("(");
-
-            _handleFunction(output, data, null, "this.obj", "init.allClasses.$className", false);
-            output.write(").apply(this, arguments);");
+            output.write("Object.defineProperty(this, 'obj', {");
+            output.write("enumerable: false, value: (");
+            var code = data["code"] == null || data["code"].length == 0 ? "function(){}" :
+                "(" + data["code"].substring(data["code"].indexOf(":") + 2) + "[0])";
+            _handleFunction(output, data, null, "this", code, false);
+            output.write(").apply(this, arguments)");
+            output.write("});");
             continue;
           }
 
@@ -255,12 +257,6 @@ class Compiler {
     output.write("$prefix.$name = function $name() {");
 
     _handleClassField(output, {"name": "isWrapped", "value": "true"});
-
-    _handleClassField(output, {
-      "name": "obj",
-      "value": "Object.create(init.allClasses.$name.prototype)"
-    });
-
     _handleClassChildren();
 
     output.write("};");
