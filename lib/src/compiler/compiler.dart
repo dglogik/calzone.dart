@@ -157,7 +157,7 @@ class Compiler {
           codeStr != null
               ? codeStr
               : (code.trim().startsWith(":") == false
-                  ? "$binding." + code.substring(0, code.indexOf(":") - 1)
+                  ? "$binding." + code.substring(0, code.indexOf(":"))
                   : code.substring(code.indexOf(":") + 2));
 
       var fullParamString = parameters.map((p) => p["name"]).join(",");
@@ -310,39 +310,54 @@ class Compiler {
     output.write("return returned;};");
   }
 
-  String compile(List<String> libraries) {
+  String compile(List<String> include) {
     StringBuffer output = new StringBuffer();
 
     var children = [];
     for (var library in file["elements"]["library"].values) {
       for (var child in library["children"]) {
-        if (child.split("/")[0] == "class") {
-          if (libraries.contains(library["name"])) {
-            _wrappedClasses[file["elements"]["class"][child.split("/")[1]][
-                "name"]] = file["elements"]["class"][child.split("/")[1]];
-          }
-          _allClasses
-              .add(file["elements"]["class"][child.split("/")[1]]["name"]);
+        child = child.split("/");
+
+        var type = child[0];
+        var id = child[1];
+
+        var childData = file["elements"][type][id];
+
+        if (type == "class") {
+          _allClasses.add(childData["name"]);
+        }
+
+        if (include.contains(library["name"] + "." + childData["name"]) || include.contains(library["name"])) {
+          if(type == "class")
+            _wrappedClasses[childData["name"]] = childData;
+          children.add(childData);
         }
       }
-
-      if (!libraries.contains(library["name"])) continue;
-
-      children.addAll(library["children"]);
     }
 
-    for (var child in children) {
-      child = child.split("/");
+    output.write("function dynamicTo(obj) {if(typeof(obj) === 'undefined' || obj === null) { return obj; }");
+    _base.dynamicTransformTo(output, _globals);
+    for(var transformer in typeTransformers) {
+      transformer.dynamicTransformTo(output, _globals);
+    }
+    output.write("return obj;}");
 
-      var type = child[0];
-      var id = child[1];
+    output.write("function dynamicFrom(obj) {if(typeof(obj) === 'undefined' || obj === null) { return obj; }");
+    _base.dynamicTransformFrom(output, _globals);
+    for(var transformer in typeTransformers) {
+      transformer.dynamicTransformFrom(output, _globals);
+    }
+    output.write("return obj;}");
+
+    for (var child in children) {
+      var type = child["kind"];
 
       if (type == "function") {
-        _handleFunction(output, file["elements"][type][id], "module.exports");
+        _handleFunction(output, child, "module.exports");
       }
 
       if (type == "class") {
-        _handleClass(output, file["elements"][type][id], "module.exports");
+        _handleClass(output, child, "module.exports");
       }
     }
 

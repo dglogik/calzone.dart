@@ -17,49 +17,6 @@ final String _OBJ_EACH_PREFIX = """
   }
 """;
 
-final String _DYNAMIC_TO_PREFIX = """
-  function dynamicTo(elm) {
-    if(elm.__isWrapped__)
-      return elm.__obj__;
-    if(Array.isArray(elm)) {
-      return elm.map(function(elmTwo) {
-        return dynamicTo(elm);
-      });
-    }
-    if(elm.constructor.name === 'Object') {
-      var elms = Object.keys(elm).reduce(function(arr, key) {
-        arr.push(key); arr.push(dynamicTo(elm[key]));
-        return arr;
-      }, []);
-      return new P.LinkedHashMap_LinkedHashMap\$_literal(elms,P.String,null);
-    }
-    return elm;
-  }
-""";
-
-final String _DYNAMIC_FROM_PREFIX = """
-  function dynamicFrom(elm) {
-    var name = elm.constructor.name;
-    if(typeof(module.exports[name]) !== 'undefined') {
-      return module.exports[name].fromObj(elm);
-    }
-    if(Array.isArray(elm)) {
-      return elm.map(function(elmTwo) {
-        return dynamicFrom(elm);
-      });
-    }
-    if(name === 'JsLinkedHashMap') {
-      var a = {};
-      objEach(elm._strings, function(cell) {
-        a[cell.hashMapCellKey] = dynamicFrom(cell.hashMapCellValue);
-      });
-
-      return a;
-    }
-    return elm;
-  }
-""";
-
 final String _MAP_PREFIX = "var \$Map = require('es6-map');";
 
 // ES6-like Maps and Objects to Dart Maps, Arrays to Lists
@@ -69,6 +26,41 @@ class CollectionsTransformer implements TypeTransformer {
   final bool _usePolyfill;
 
   CollectionsTransformer([this._usePolyfill = false]);
+
+  dynamicTransformTo(StringBuffer output, List<String> globals) =>
+    output.write("""
+      if(Array.isArray(obj)) {
+        return obj.map(function(e) {
+          return dynamicTo(e);
+        });
+      }
+      if(obj.constructor.name === 'Object') {
+        var elms = Object.keys(obj).reduce(function(arr, key) {
+        arr.push(key); arr.push(dynamicTo(obj[key]));
+          return arr;
+        }, []);
+        return new P.LinkedHashMap_LinkedHashMap\$_literal(elms,P.String,null);
+      }
+    """);
+
+  dynamicTransformFrom(StringBuffer output, List<String> globals) {
+    if(!globals.contains(_OBJ_EACH_PREFIX))
+      globals.add(_OBJ_EACH_PREFIX);
+    output.write("""
+      if(Array.isArray(obj)) {
+        return obj.map(function(e) {
+          return dynamicFrom(e);
+        });
+      }
+      if(obj.constructor.name === 'JsLinkedHashMap') {
+        var a = {};
+        objEach(obj._strings, function(cell) {
+          a[cell.hashMapCellKey] = dynamicFrom(cell.hashMapCellValue);
+        });
+        return a;
+      }
+    """);
+  }
 
   @override
   transformToDart(StringBuffer output, TypeTransformer base, String name,
@@ -101,8 +93,6 @@ class CollectionsTransformer implements TypeTransformer {
           if (tree.length > 2) {
             _handleTree(tree[2]);
           } else {
-            if (!globals.contains(_DYNAMIC_TO_PREFIX)) globals
-                .add(_DYNAMIC_TO_PREFIX);
             output.write("this[i] = dynamicTo(a);");
           }
           output.write("}, $binding);");
@@ -146,8 +136,6 @@ class CollectionsTransformer implements TypeTransformer {
         if (tree.length > 2) {
           _handleTree(tree[2]);
         } else {
-          if (!globals.contains(_DYNAMIC_TO_PREFIX)) globals
-              .add(_DYNAMIC_TO_PREFIX);
           output.write("this[i] = dynamicTo(a);");
         }
         output.write("}, $name);");
@@ -199,8 +187,6 @@ class CollectionsTransformer implements TypeTransformer {
           if (tree.length > 2) {
             _handleTree(tree[2], "values");
           } else {
-            if (!globals.contains(_DYNAMIC_FROM_PREFIX)) globals
-                .add(_DYNAMIC_FROM_PREFIX);
             output.write(
                 "values.forEach(function(key, i) { values[i] = dynamicFrom(key); });");
           }
@@ -243,8 +229,6 @@ class CollectionsTransformer implements TypeTransformer {
         if (tree.length > 2) {
           _handleTree(tree[2], "values");
         } else {
-          if (!globals.contains(_DYNAMIC_FROM_PREFIX)) globals
-              .add(_DYNAMIC_FROM_PREFIX);
           output.write(
               "values.forEach(function(key, i) { values[i] = dynamicFrom(key); });");
         }

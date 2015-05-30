@@ -6,6 +6,12 @@ class ClosureTransformer implements TypeTransformer {
 
   ClosureTransformer();
 
+  // TODO
+  dynamicTransformTo(StringBuffer output, List<String> globals) {}
+    
+  // TODO
+  dynamicTransformFrom(StringBuffer output, List<String> globals) {}
+
   @override
   transformToDart(StringBuffer output, TypeTransformer base, String name, List tree, List<String> globals) {
     // TODO

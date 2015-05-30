@@ -6,6 +6,16 @@ class BaseTypeTransformer implements TypeTransformer {
 
   BaseTypeTransformer(this._compiler);
 
+  dynamicTransformTo(StringBuffer output, List<String> globals) =>
+    output.write("if(obj.__isWrapped__) { return obj.__obj__; }");
+
+  dynamicTransformFrom(StringBuffer output, List<String> globals) =>
+    output.write("""
+      if(typeof(module.exports[obj.constructor.name]) !== 'undefined') {
+        return module.exports[obj.constructor.name].fromObj(obj);
+      }
+    """);
+
   transformTo(StringBuffer output, String name, String type) => transformToDart(
       output, null, name, _getTypeTree(type), _compiler._globals);
   transformFrom(StringBuffer output, String name, String type) =>
@@ -24,7 +34,7 @@ class BaseTypeTransformer implements TypeTransformer {
     }
 
     if (type == "dynamic") {
-      output.write("if($name.__isWrapped__) { $name = $name.__obj__; }");
+      output.write("$name = dynamicTo($name);");
     }
 
     for (TypeTransformer transformer in _compiler.typeTransformers) {
@@ -55,8 +65,7 @@ class BaseTypeTransformer implements TypeTransformer {
     }
 
     if (type == "dynamic") {
-      output.write(
-          "if(typeof(module.exports[$name.constructor.name]) !== 'undefined') { $name = module.exports[$name.constructor.name].fromObj($name); }");
+      output.write("$name = dynamicFrom($name);");
     }
 
     for (TypeTransformer transformer in _compiler.typeTransformers) {

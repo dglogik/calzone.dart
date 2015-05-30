@@ -10,6 +10,46 @@ class PromiseTransformer implements TypeTransformer {
 
   PromiseTransformer([this._usePolyfill = false]);
 
+  dynamicTransformTo(StringBuffer output, List<String> globals) =>
+    output.write("""
+      if(obj instanceof \$Promise) {
+        var completer = new P._SyncCompleter(new P._Future(0, \$.Zone__current, null));
+        obj.then(function(then) {
+          completer.complete\$1(dynamicTo(then));
+        }).catch(function(err) {
+          completer.completeError\$1(err);
+        });
+        return completer.future;
+      }
+    """);
+
+  dynamicTransformFrom(StringBuffer output, List<String> globals) {
+    var promiseName = "Promise";
+    if(_usePolyfill) {
+      if(!globals.contains(_PROMISE_PREFIX))
+        globals.add(_PROMISE_PREFIX);
+      promiseName = "\$Promise";
+    }
+
+    output.write("""
+      if(obj.constructor.name === "_Promise") {
+        var promise = new $promiseName(function(then, error) {
+          obj.then\$2\$onError({
+            call\$1:function(val) {
+              transformFrom(val);
+              then(val);
+            }
+          }, {
+            call\$1: function(err) {
+              error(err);
+            }
+          });
+        });
+        return promise;
+      }
+    """);
+  }
+
   @override
   transformToDart(StringBuffer output, TypeTransformer base, String name, List tree, List<String> globals) {
     output.write("var completer = new P._SyncCompleter(new P._Future(0, \$.Zone__current, null));");

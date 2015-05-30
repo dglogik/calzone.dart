@@ -25,20 +25,24 @@ main(List<String> args) async {
   if (results["target"] == "node") {
     // node preamble
     data.insert(0, """
-    global.location = { href: "file://" + process.cwd() + "/" };
-    global.scheduleImmediate = setImmediate;
-    global.self = global;
-    global.require = require;
+global.location = { href: "file://" + process.cwd() + "/" };
+global.scheduleImmediate = setImmediate;
+global.self = global;
+global.require = require;
 
-    // Support for deferred loading.
-    global.dartDeferredLibraryLoader = function(uri, successCallback, errorCallback) {
-      try {
-        load(uri);
-        successCallback();
-      } catch (error) {
-        errorCallback(error);
-      }
-    };
+global.dartMainRunner = function(main, args) {
+  main(args.slice(Math.min(args.length, 2)));
+};
+
+// Support for deferred loading.
+global.dartDeferredLibraryLoader = function(uri, successCallback, errorCallback) {
+  try {
+    load(uri);
+    successCallback();
+  } catch (error) {
+    errorCallback(error);
+  }
+};
     """);
   }
 
