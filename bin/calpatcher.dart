@@ -29,6 +29,7 @@ global.location = { href: "file://" + process.cwd() + "/" };
 global.scheduleImmediate = setImmediate;
 global.self = global;
 global.require = require;
+global.process = process;
 
 global.dartMainRunner = function(main, args) {
   main(args.slice(Math.min(args.length, 2)));
