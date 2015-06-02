@@ -14,17 +14,6 @@ RegExp _TYPE_REGEX = new RegExp(r"\(([^]*)\) -> ([^]+)");
 RegExp _COMMA_REGEX = new RegExp(r",(?!([^(<]+[)>]))");
 RegExp _SPACE_REGEX = new RegExp(r" (?!([^(<]+[)>]))");
 
-List<Parameter> mergeParameters(List<Parameter> one, List<Parameter> two) {
-  one.forEach((Parameter param) {
-    var matches = two.where((p) => p.name == param.name);
-    if(matches.length > 0 && matches.first.type != ParameterKind.REQUIRED) {
-      one[one.indexOf(param)] = new Parameter(param.kind, param.type, param.name, matches.first.defaultValue);
-    }
-  });
-
-  return one;
-}
-
 List<dynamic> _getTypeTree(String type) {
   RegExp regex = new RegExp(r"([A-Za-z]+)(?:\<([\w\s,]+)\>)*");
   var tree = [];

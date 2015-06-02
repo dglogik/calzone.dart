@@ -49,11 +49,11 @@ abstract class NamedNode {
 
 class Class implements NamedNode {
   final Map<String, List<Parameter>> functions = {};
-  final List<Class> tree;
+  final List<Class> inheritedFrom;
 
   final String name;
 
-  Class(this.name, [this.tree = const []]);
+  Class(this.name, [this.inheritedFrom = const []]);
 }
 
 class Parameter implements NamedNode {

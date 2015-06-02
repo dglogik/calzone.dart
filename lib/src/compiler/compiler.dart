@@ -18,7 +18,7 @@ class Compiler {
   Compiler.fromPath(String dartFile, String path)
       : this(dartFile, JSON.decode(new File(path).readAsStringSync()));
 
-  List<Parameter> _getParamsFromInfo(String typeStr) {
+  List<Parameter> _getParamsFromInfo(String typeStr, [List<Parameter> analyzerParams]) {
     String type = _TYPE_REGEX.firstMatch(typeStr).group(1);
 
     int paramNameIndex = 1;
@@ -33,7 +33,7 @@ class Compiler {
       ..removeWhere((piece) => piece.trim().length == 0);
     if (p == null || p.length == 0)
       return [];
-    return p.map((String piece) {
+    List<Parameter> parameters = p.map((String piece) {
       piece = piece.trim();
 
       if (piece.startsWith("[")) {
@@ -104,6 +104,17 @@ class Compiler {
 
       return new Parameter(kind, piece, actualName);
     }).toList();
+
+    if(analyzerParams != null) {
+      parameters.forEach((Parameter param) {
+        var matches = analyzerParams.where((p) => p.name == param.name);
+        if(matches.length > 0 && matches.first.type != ParameterKind.REQUIRED) {
+          parameters[parameters.indexOf(param)] = new Parameter(param.kind, param.type, param.name, matches.first.defaultValue);
+        }
+      });
+    }
+
+    return parameters;
   }
 
 
@@ -208,10 +219,9 @@ class Compiler {
                 ? "function(){}"
                 : "(" + data["code"].substring(data["code"].indexOf(":") + 2) + "[0])";
             var func = classData["name"];
-            if(data["name"] != null && data["name"].length > 0) {
-              func += "." + data["name"];
-            }
-            _handleFunction(output, data, mergeParameters(_getParamsFromInfo(data["type"]), analyzer.getFunctionParameters(library, func)), null, "this", code, false, false);
+            _handleFunction(output, data,
+                _getParamsFromInfo(data["type"], analyzer.getFunctionParameters(library, func, classData["name"])),
+                null, "this", code, false, false);
             output.write(").apply(this, arguments)");
             output.write("});");
             continue;
@@ -277,11 +287,11 @@ class Compiler {
               .contains(NAME_REPLACEMENTS[func["name"]])) func["name"] = NAME_REPLACEMENTS[func["name"]];
       if (func["modifiers"]["static"] || func["modifiers"]["factory"]) {
         _handleFunction(output, func,
-            mergeParameters(_getParamsFromInfo(func["type"]), analyzer.getFunctionParameters(library, "${data["name"]}.${func["name"]}")),
+            _getParamsFromInfo(func["type"], analyzer.getFunctionParameters(library, func["name"], data["name"])),
             "module.exports.$name", "this", "init.allClasses.$name.${func["code"].split(":")[0]}");
       } else {
         _handleFunction(output, func,
-            mergeParameters(_getParamsFromInfo(func["type"]), analyzer.getFunctionParameters(library, "${data["name"]}.${func["name"]}")),
+            _getParamsFromInfo(func["type"], analyzer.getFunctionParameters(library, func["name"], data["name"])),
             "module.exports.$name.prototype", "this.__obj__", "this.__obj__.${func["code"].split(":")[0]}");
       }
     }
@@ -344,7 +354,7 @@ class Compiler {
 
       if (type == "function") {
         _handleFunction(output, child.value,
-            mergeParameters(_getParamsFromInfo(child.value["type"]), analyzer.getFunctionParameters(child.key, child.value["name"])), "module.exports");
+            _getParamsFromInfo(child.value["type"], analyzer.getFunctionParameters(child.key, child.value["name"])), "module.exports");
       }
 
       if (type == "class") {

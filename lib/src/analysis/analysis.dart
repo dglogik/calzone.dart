@@ -24,7 +24,10 @@ VisitorBuilder _VISITOR = new VisitorBuilder()
         var cNode = output[c.name.toString()];
 
         var name = f.name.toString();
-        if(NAME_REPLACEMENTS.contains(name))
+        if(name == "null")
+          name = "";
+
+        if(NAME_REPLACEMENTS.containsKey(name))
           name = NAME_REPLACEMENTS[name];
 
         cNode.functions[name] = [];
@@ -127,5 +130,13 @@ class Analyzer {
     if(!_nodeTree[library].containsKey(function))
       return [];
     return _nodeTree[library][function];
+  }
+
+  Class getClass(String library, String c) {
+    buildLibrary(library);
+
+    if(!_nodeTree[library].containsKey(c))
+      return null;
+    return _nodeTree[library][c];
   }
 }
