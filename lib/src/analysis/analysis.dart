@@ -1,26 +1,43 @@
 part of calzone.analysis;
 
 VisitorBuilder _VISITOR = new VisitorBuilder()
-  ..where(FormalParameterList, (output, FormalParameterList node) {
+  ..where(ClassDeclaration, (Map<String, dynamic> output, ClassDeclaration node) {
+    var tree = [];
+
+    if(node.extendsClause != null)
+      tree.add(node.extendsClause.superclass.toString());
+
+    if(node.withClause != null)
+      tree.addAll(node.withClause.mixinTypes.map((type) => type.toString()));
+
+    if(node.implementsClause != null)
+      tree.addAll(node.implementsClause.interfaces.map((type) => type.toString()));
+
+    output[node.name.toString()] = new Class(node.name.toString(), tree);
+  })
+  ..where(FormalParameterList, (Map<String, dynamic> output, FormalParameterList node) {
     var f = node.parent;
     var c = f.parent;
 
-    var name = "";
     if((c is NamedExpression || c is ClassDeclaration) && c.parent is CompilationUnit) {
-      name += c.name.toString();
-
       if(f is ClassMember) {
-        if(f.name != null) {
-          if(NAME_REPLACEMENTS.containsKey(f.name.toString()))
-            name += NAME_REPLACEMENTS[f.name.toString()];
-          else
-            name += "." + f.name.toString();
-        }
+        var cNode = output[c.name.toString()];
+
+        var name = f.name.toString();
+        if(NAME_REPLACEMENTS.contains(name))
+          name = NAME_REPLACEMENTS[name];
+
+        cNode.functions[name] = [];
+        node.visitChildren(_PARAM_VISITOR.build(cNode.functions[name]));
+      } else {
+        var name = c.name.toString();
+        if(NAME_REPLACEMENTS.contains(name))
+          name = NAME_REPLACEMENTS[name];
+
+        output[c.name.toString()] = [];
+        node.visitChildren(_PARAM_VISITOR.build(output[c.name.toString()]));
       }
 
-      output[name] = [];
-
-      node.visitChildren(_PARAM_VISITOR.build(output[name]));
       return true;
     }
     return false;
@@ -55,7 +72,7 @@ VisitorBuilder _PARAM_VISITOR = new VisitorBuilder()
 
 class Analyzer {
   Map<String, dynamic> _units = {};
-  Map<String, Map<String, Parameter>> _functions = {};
+  Map<String, Map<String, dynamic>> _nodeTree = {};
 
   Analyzer(String file) {
     SourceCrawler crawler = new SourceCrawler(packageRoots: [(new File(file)).parent.parent.path + '/packages']);
@@ -79,24 +96,36 @@ class Analyzer {
     }
   }
 
-  List<Parameter> getFunctionParameters(String library, String function) {
-    if(!_units.containsKey(library))
-      return null;
+  buildLibrary(String library) {
+    if(!_units.containsKey(library) || _nodeTree.containsKey(library))
+      return;
 
-    if(!_functions.containsKey(library)) {
-      _functions[library] = {};
-      var visitor = _VISITOR.build(_functions[library]);
+    _nodeTree[library] = {};
+    var visitor = _VISITOR.build(_nodeTree[library]);
 
-      if(_units[library] is List)
-        _units[library].forEach((u) => u.visitChildren(visitor));
-      else
-        _units[library].visitChildren(visitor);
+    if(_units[library] is List) {
+      _units[library].forEach((u) => u.visitChildren(visitor));
+    } else {
+      _units[library].visitChildren(visitor);
+    }
+  }
+
+  List<Parameter> getFunctionParameters(String library, String function, [String c]) {
+    buildLibrary(library);
+
+    if(c != null) {
+      if(!_nodeTree[library].containsKey(c))
+        return [];
+      var cNode = _nodeTree[library][c];
+
+      if(!cNode.functions.containsKey(function))
+        return [];
+
+      return cNode.functions[function];
     }
 
-    var functions = _functions[library];
-    if(functions.containsKey(function)) {
-      return functions[function];
-    }
-    return [];
+    if(!_nodeTree[library].containsKey(function))
+      return [];
+    return _nodeTree[library][function];
   }
 }

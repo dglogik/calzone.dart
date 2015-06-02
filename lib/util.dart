@@ -43,7 +43,20 @@ class Duo<K, V> {
   Duo(this.key, this.value);
 }
 
-class Parameter {
+abstract class NamedNode {
+  String get name;
+}
+
+class Class implements NamedNode {
+  final Map<String, List<Parameter>> functions = {};
+  final List<Class> tree;
+
+  final String name;
+
+  Class(this.name, [this.tree = const []]);
+}
+
+class Parameter implements NamedNode {
   final String type;
   final String name;
   final String defaultValue;
