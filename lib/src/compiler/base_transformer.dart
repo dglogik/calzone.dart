@@ -28,7 +28,7 @@ class BaseTypeTransformer implements TypeTransformer {
     var type = tree[0];
     if (PRIMITIVES.contains(type)) return;
 
-    if (_compiler._wrappedClasses.containsKey(type)) {
+    if (_compiler._classes.containsKey(type) && _compiler._classes[type].value) {
       output.write("if(!$name.__isWrapped__) { $name = $name.__obj__; }");
       return;
     }
@@ -49,7 +49,7 @@ class BaseTypeTransformer implements TypeTransformer {
     var type = tree[0];
     if (PRIMITIVES.contains(type)) return;
 
-    if (_compiler._wrappedClasses.containsKey(type)) {
+    if (_compiler._classes.containsKey(type) && _compiler._classes[type].value) {
       output.write("if(!$name.__isWrapped__) {");
       output.write("var _type = typeof(module.exports[$name.constructor.name]) === 'undefined' ? '$type' : $name.constructor.name;");
       output.write("$name = module.exports[_type].fromObj($name); }");

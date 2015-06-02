@@ -34,7 +34,7 @@ VisitorBuilder _VISITOR = new VisitorBuilder()
         node.visitChildren(_PARAM_VISITOR.build(cNode.functions[name]));
       } else {
         var name = c.name.toString();
-        if(NAME_REPLACEMENTS.contains(name))
+        if(NAME_REPLACEMENTS.containsKey(name))
           name = NAME_REPLACEMENTS[name];
 
         output[c.name.toString()] = [];

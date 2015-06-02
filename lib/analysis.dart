@@ -7,4 +7,4 @@ import "package:calzone/util.dart";
 import "dart:io";
 
 part 'src/analysis/visitor.dart';
-part 'src/analysis/analysis.dart';
+part 'src/analysis/analyzer.dart';

@@ -7,11 +7,10 @@ class Compiler {
   List<TypeTransformer> typeTransformers = [];
 
   BaseTypeTransformer _base;
-  List<String> _allClasses = [];
-  Map<String, Map> _wrappedClasses = {};
+  Map<String, Duo<Map, bool>> _classes = {};
   List<String> _globals = [];
 
-  Compiler(String dartFile, this._info): analyzer = new Analyzer(dartFile) {
+  Compiler(String dartFile, this._info, { this.typeTransformers }): analyzer = new Analyzer(dartFile) {
     _base = new BaseTypeTransformer(this);
   }
 
@@ -62,7 +61,7 @@ class Compiler {
                 .where((e) => e.length > 0)
                 .map((e) => e.contains(" ")
                     ? e.split(" ")[0]
-                    : (_allClasses.contains(_getTypeTree(e)[0])
+                    : (_classes.containsKey(_getTypeTree(e)[0])
                         ? e
                         : "dynamic"))
                 .toList();
@@ -90,7 +89,7 @@ class Compiler {
         actualName = split[1];
       } else {
         var c = _getTypeTree(split[0])[0];
-        if (c != "Function" && !_allClasses.contains(c)) {
+        if (c != "Function" && !_classes.containsKey(c)) {
           piece = "dynamic";
           actualName = c;
         } else {
@@ -323,15 +322,14 @@ class Compiler {
 
         var childData = _info["elements"][type][id];
 
+        var isIncluded = include.contains(library["name"] + "." + childData["name"]) || include.contains(library["name"]);
+
         if (type == "class") {
-          _allClasses.add(childData["name"]);
+          _classes[childData["name"]] = new Duo(childData, isIncluded);
         }
 
-        if (include.contains(library["name"] + "." + childData["name"]) || include.contains(library["name"])) {
-          if(type == "class")
-            _wrappedClasses[childData["name"]] = childData;
+        if (isIncluded)
           children.add(new Duo(library["name"], childData));
-        }
       }
     }
 
