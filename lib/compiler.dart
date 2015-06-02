@@ -1,5 +1,7 @@
 library calzone.compiler;
 
+import "package:analyzer/analyzer.dart" show ParameterKind;
+import "package:calzone/analysis.dart" show Analyzer;
 import "package:calzone/util.dart";
 
 import "dart:io";
@@ -8,29 +10,20 @@ import "dart:convert";
 part "src/compiler/base_transformer.dart";
 part "src/compiler/compiler.dart";
 
-const Map<String, String> _NAME_REPLACEMENTS = const {
-  "[]": "get",
-  "[]=": "set",
-  "==": "equals",
-  "+": "add",
-  "-": "subtract",
-  "*": "multiply",
-  "/": "divide",
-  "|": "bitwiseOr",
-  "&": "bitwiseAnd",
-  "<": "lessThan",
-  "<=": "lessThanOrEqual",
-  ">": "greaterThan",
-  ">=": "greaterThanOrEqual",
-  "~/": "divideTruncate",
-  "~": "bitwiseNegate",
-  "<<": "shiftLeft",
-  ">>": "shiftRight",
-  "%": "modulo",
-  "^": "bitwiseExclusiveOr"
-};
+RegExp _TYPE_REGEX = new RegExp(r"\(([^]*)\) -> ([^]+)");
+RegExp _COMMA_REGEX = new RegExp(r",(?!([^(<]+[)>]))");
+RegExp _SPACE_REGEX = new RegExp(r" (?!([^(<]+[)>]))");
 
-const List<String> _PRIMITIVES = const ["String", "Number", "num", "double", "int", "Integer", "bool", "Boolean"];
+List<Parameter> mergeParameters(List<Parameter> one, List<Parameter> two) {
+  one.forEach((Parameter param) {
+    var matches = two.where((p) => p.name == param.name);
+    if(matches.length > 0 && matches.first.type != ParameterKind.REQUIRED) {
+      one[one.indexOf(param)] = new Parameter(param.kind, param.type, param.name, matches.first.defaultValue);
+    }
+  });
+
+  return one;
+}
 
 List<dynamic> _getTypeTree(String type) {
   RegExp regex = new RegExp(r"([A-Za-z]+)(?:\<([\w\s,]+)\>)*");

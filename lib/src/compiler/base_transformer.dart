@@ -26,10 +26,10 @@ class BaseTypeTransformer implements TypeTransformer {
   transformToDart(StringBuffer output, TypeTransformer base, String name,
       List tree, List<String> globals) {
     var type = tree[0];
-    if (_PRIMITIVES.contains(type)) return;
+    if (PRIMITIVES.contains(type)) return;
 
     if (_compiler._wrappedClasses.containsKey(type)) {
-      output.write("$name = $name.__obj__;");
+      output.write("if(!$name.__isWrapped__) { $name = $name.__obj__; }");
       return;
     }
 
@@ -47,20 +47,12 @@ class BaseTypeTransformer implements TypeTransformer {
   transformFromDart(StringBuffer output, TypeTransformer base, String name,
       List tree, List<String> globals) {
     var type = tree[0];
-    if (_PRIMITIVES.contains(type)) return;
+    if (PRIMITIVES.contains(type)) return;
 
     if (_compiler._wrappedClasses.containsKey(type)) {
-      output.write("$name = Object.create(module.exports.$type.prototype);");
-
-      _compiler._handleClassField(
-          output, {"name": "isWrapped", "value": "true"}, name);
-
-      _compiler._handleClassField(output, {
-        "name": "__obj__",
-        "value": "Object.create(init.allClasses.$type.prototype)"
-      }, name);
-
-      output.write("$name = module.exports.$type.fromObj($name);");
+      output.write("if(!$name.__isWrapped__) {");
+      output.write("var _type = typeof(module.exports[$name.constructor.name]) === 'undefined' ? '$type' : $name.constructor.name;");
+      output.write("$name = module.exports[_type].fromObj($name); }");
       return;
     }
 
