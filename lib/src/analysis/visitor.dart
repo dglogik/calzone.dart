@@ -1,19 +1,20 @@
 part of calzone.analysis;
 
-typedef bool VisitorFunction(data, AstNode ast);
+typedef bool VisitorFunction(Analyzer analzyer, data, AstNode ast);
 
 class Visitor extends GeneralizingAstVisitor<dynamic> {
   final Map<Type, List<VisitorFunction>> _visitors;
+  final Analyzer _analyzer;
   final data;
 
-  Visitor(this.data, this._visitors);
+  Visitor(this._analyzer, this.data, this._visitors);
 
   @override
   visitNode(AstNode node) {
     bool shouldVisitChildren = true;
     if(_visitors.containsKey(node.runtimeType)) {
       _visitors[node.runtimeType].forEach((visitor) {
-        if(visitor(data, node)) shouldVisitChildren = false;
+        if(visitor(_analyzer, data, node)) shouldVisitChildren = false;
       });
     }
 
@@ -42,7 +43,7 @@ class VisitorBuilder {
       _visitors[types] = [visitor];
   }
 
-  Visitor build(data) {
-    return new Visitor(data, _visitors);
+  Visitor build(Analyzer analyzer, data) {
+    return new Visitor(analyzer, data, _visitors);
   }
 }

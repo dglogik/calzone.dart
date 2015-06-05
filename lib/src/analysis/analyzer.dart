@@ -1,44 +1,54 @@
 part of calzone.analysis;
 
 VisitorBuilder _VISITOR = new VisitorBuilder()
-  ..where(ClassDeclaration, (Map<String, dynamic> output, ClassDeclaration node) {
+  ..where(ClassDeclaration, (Analyzer analyzer, Duo duo, ClassDeclaration node) {
+    Map data = duo.value;
     var tree = [];
 
-    if(node.extendsClause != null)
-      tree.add(node.extendsClause.superclass.toString());
+    _handleClass(ClassDeclaration c) {
+      if(c.extendsClause != null)
+        tree.add(c.extendsClause.superclass.toString());
 
-    if(node.withClause != null)
-      tree.addAll(node.withClause.mixinTypes.map((type) => type.toString()));
+      if(c.withClause != null)
+        tree.addAll(c.withClause.mixinTypes.map((type) => type.toString()));
 
-    if(node.implementsClause != null)
-      tree.addAll(node.implementsClause.interfaces.map((type) => type.toString()));
+      if(tree.length > 0)
+        analyzer.buildLibrary(duo.key, false);
 
-    output[node.name.toString()] = new Class(node.name.toString(), tree);
+      var copy = []..addAll(tree);
+      copy.forEach((type) {
+        var vals = analyzer._nodeTree.values.where((val) => val.keys.contains(type));
+        if(vals.length > 0) {
+          tree.addAll(vals.first[type].inheritedFrom);
+        }
+      });
+    }
+
+    _handleClass(node);
+
+    data[node.name.toString()] = new Class(node.name.toString(), tree);
   })
-  ..where(FormalParameterList, (Map<String, dynamic> output, FormalParameterList node) {
+  ..where(FormalParameterList, (Analyzer analyzer, Duo duo, ClassDeclaration node) {
+    Map data = duo.value;
+
     var f = node.parent;
     var c = f.parent;
 
     if((c is NamedExpression || c is ClassDeclaration) && c.parent is CompilationUnit) {
       if(f is ClassMember) {
-        var cNode = output[c.name.toString()];
+        var cNode = data[c.name.toString()];
 
         var name = f.name.toString();
         if(name == "null")
           name = "";
 
-        if(NAME_REPLACEMENTS.containsKey(name))
-          name = NAME_REPLACEMENTS[name];
-
         cNode.functions[name] = [];
-        node.visitChildren(_PARAM_VISITOR.build(cNode.functions[name]));
+        node.visitChildren(_PARAM_VISITOR.build(analyzer, cNode.functions[name]));
       } else {
         var name = c.name.toString();
-        if(NAME_REPLACEMENTS.containsKey(name))
-          name = NAME_REPLACEMENTS[name];
 
-        output[c.name.toString()] = [];
-        node.visitChildren(_PARAM_VISITOR.build(output[c.name.toString()]));
+        data[c.name.toString()] = [];
+        node.visitChildren(_PARAM_VISITOR.build(analyzer, data[c.name.toString()]));
       }
 
       return true;
@@ -47,7 +57,7 @@ VisitorBuilder _VISITOR = new VisitorBuilder()
   });
 
 VisitorBuilder _PARAM_VISITOR = new VisitorBuilder()
-  ..where(FormalParameter, (output, FormalParameter node) {
+  ..where(FormalParameter, (Analyzer analyzer, output, FormalParameter node) {
     var norm = node;
     if(node is DefaultFormalParameter)
       norm = norm.parameter;
@@ -55,7 +65,7 @@ VisitorBuilder _PARAM_VISITOR = new VisitorBuilder()
     if(norm is FunctionTypedFormalParameter) {
       var types = [];
       var params = [];
-      norm.parameters.visitChildren(_PARAM_VISITOR.build(params));
+      norm.parameters.visitChildren(_PARAM_VISITOR.build(analyzer, params));
       for(var param in params) {
         types.add(param.type != null ? param.type : "dynamic");
       }
@@ -76,40 +86,51 @@ VisitorBuilder _PARAM_VISITOR = new VisitorBuilder()
 class Analyzer {
   Map<String, dynamic> _units = {};
   Map<String, Map<String, dynamic>> _nodeTree = {};
+  String _packageRoot;
 
-  Analyzer(String file) {
-    SourceCrawler crawler = new SourceCrawler(packageRoots: [(new File(file)).parent.parent.path + '/packages']);
-    var libraries = crawler(file);
-
+  _handleLibraries(List<LibraryTuple> libraries, [Function cb]) {
     for(LibraryTuple library in libraries) {
-      var name;
-      library.astUnit.directives
-        .where((e) => e is PartOfDirective || e is LibraryDirective)
-        .forEach((e) => name = e is PartOfDirective ? e.libraryName.name : e.name.name);
+      var name = library.name;
       if(name != null) {
         if(_units.containsKey(name)) {
-          if(_units[name] is List)
-            _units[name].add(library.astUnit);
-          else
-            _units[name] = [_units[name], library.astUnit];
+          if(_units[name] is List) {
+            if(!_units[name].any((unit) => unit.path == library.path))
+              _units[name].add(library);
+           } else {
+            _units[name] = [_units[name], library];
+          }
         } else {
-          _units[name] = library.astUnit;
+          _units[name] = library;
         }
       }
+      if(cb != null)
+        cb(library);
     }
   }
 
-  buildLibrary(String library) {
+  Analyzer(String file) {
+    _packageRoot = new File(file).parent.path + '/packages';
+    SourceCrawler crawler = new SourceCrawler(packageRoots: [_packageRoot]);
+    _handleLibraries(crawler(file));
+  }
+
+  buildLibrary(String library, [bool deep = true]) {
     if(!_units.containsKey(library) || _nodeTree.containsKey(library))
       return;
 
+    SourceCrawler crawler = new SourceCrawler(packageRoots: [_packageRoot]);
+
+    var libPath = _units[library] is List ? _units[library].first.path : _units[library].path;
+    if(!deep)
+      _handleLibraries(crawler(libPath), (LibraryTuple lib) => buildLibrary(lib.name, true));
+
     _nodeTree[library] = {};
-    var visitor = _VISITOR.build(_nodeTree[library]);
+    var visitor = _VISITOR.build(this, new Duo(library, _nodeTree[library]));
 
     if(_units[library] is List) {
-      _units[library].forEach((u) => u.visitChildren(visitor));
+      _units[library].forEach((u) => u.astUnit.visitChildren(visitor));
     } else {
-      _units[library].visitChildren(visitor);
+      _units[library].astUnit.visitChildren(visitor);
     }
   }
 

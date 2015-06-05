@@ -49,7 +49,7 @@ abstract class NamedNode {
 
 class Class implements NamedNode {
   final Map<String, List<Parameter>> functions = {};
-  final List<Class> inheritedFrom;
+  final List<String> inheritedFrom;
 
   final String name;
 

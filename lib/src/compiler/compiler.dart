@@ -4,18 +4,18 @@ class Compiler {
   final Analyzer analyzer;
   final Map<String, dynamic> _info;
 
-  List<TypeTransformer> typeTransformers = [];
+  final List<TypeTransformer> typeTransformers;
 
   BaseTypeTransformer _base;
   Map<String, Duo<Map, bool>> _classes = {};
   List<String> _globals = [];
 
-  Compiler(String dartFile, this._info, { this.typeTransformers }): analyzer = new Analyzer(dartFile) {
+  Compiler(String dartFile, this._info, { this.typeTransformers : const [] }): analyzer = new Analyzer(dartFile) {
     _base = new BaseTypeTransformer(this);
   }
 
-  Compiler.fromPath(String dartFile, String path)
-      : this(dartFile, JSON.decode(new File(path).readAsStringSync()));
+  Compiler.fromPath(String dartFile, String path, { List<TypeTransformer> typeTransformers })
+      : this(dartFile, JSON.decode(new File(path).readAsStringSync()), typeTransformers: typeTransformers);
 
   List<Parameter> _getParamsFromInfo(String typeStr, [List<Parameter> analyzerParams]) {
     String type = _TYPE_REGEX.firstMatch(typeStr).group(1);
@@ -193,13 +193,14 @@ class Compiler {
     var name = data["name"];
     if (name.startsWith("_")) return;
 
-    var functions = [];
-    _handleClassChildren([isFromObj = false]) {
+    List<String> names = [];
+    List<Map> functions = [];
+    _handleClassChildren([isFromObj = false, Map c, isTopLevel = true]) {
       List<String> accessors = [];
       Map<String, Map> getters = {};
       Map<String, Map> setters = {};
 
-      for (var child in data["children"]) {
+      for (var child in c["children"]) {
         child = child.split("/");
 
         var type = child[0];
@@ -211,7 +212,7 @@ class Compiler {
 
           if (name.startsWith("_")) continue;
 
-          if (data["kind"] == "constructor") {
+          if (data["kind"] == "constructor" && isTopLevel) {
             output.write("Object.defineProperty(this, '__obj__', {");
             output.write("enumerable: false, value: (");
             var code = data["code"] == null || data["code"].length == 0
@@ -225,6 +226,9 @@ class Compiler {
             output.write("});");
             continue;
           }
+
+          if(data["kind"] == "constructor" && !isTopLevel)
+            continue;
 
           if (data["code"].startsWith("set\$")) {
             if (!accessors.contains(name)) accessors.add(name);
@@ -271,19 +275,25 @@ class Compiler {
       }
     }
 
+
+    Class c = analyzer.getClass(library, name);
+
     output.write("$prefix.$name = function $name() {");
 
     _handleClassField(output, {"name": "__isWrapped__", "value": "true"});
+    _handleClassChildren(false, data);
 
-    _handleClassChildren();
+    if(c != null)
+      c.inheritedFrom.reversed.forEach((superClass) => _handleClassChildren(false, _classes[superClass].key, false));
 
     output.write("};");
 
     for (var func in functions) {
-      if (NAME_REPLACEMENTS.containsKey(func["name"]) &&
-          !functions
-              .map((f) => f["name"])
-              .contains(NAME_REPLACEMENTS[func["name"]])) func["name"] = NAME_REPLACEMENTS[func["name"]];
+      if (NAME_REPLACEMENTS.containsKey(func["name"])) {
+        if(functions.map((f) => f["name"]).contains(NAME_REPLACEMENTS[func["name"]]))
+          continue;
+        func["name"] = NAME_REPLACEMENTS[func["name"]];
+      }
       if (func["modifiers"]["static"] || func["modifiers"]["factory"]) {
         _handleFunction(output, func,
             _getParamsFromInfo(func["type"], analyzer.getFunctionParameters(library, func["name"], data["name"])),
@@ -303,7 +313,10 @@ class Compiler {
 
     _handleClassField(output, {"name": "__obj__", "value": "__obj__"});
 
-    _handleClassChildren(true);
+    _handleClassChildren(true, data);
+
+    if(c != null)
+      c.inheritedFrom.reversed.forEach((superClass) => _handleClassChildren(true, _classes[superClass].key, false));
 
     output.write("}.bind(returned))();");
     output.write("return returned;};");

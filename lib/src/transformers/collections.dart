@@ -167,10 +167,12 @@ class CollectionsTransformer implements TypeTransformer {
         output.write("""
           var keys = [];
           var values = [];
-          objEach(a._strings, function(cell) {
-            keys.push(cell.hashMapCellKey);
-            values.push(cell.hashMapCellValue);
-          });
+          if(a._strings) {
+            objEach(a._strings, function(cell) {
+              keys.push(cell.hashMapCellKey);
+              values.push(cell.hashMapCellValue);
+            });
+          }
         """);
 
         var isJsMap = _usePolyfill && tree.length > 2 && tree[1] != "String";
