@@ -84,7 +84,6 @@ class Compiler {
       var actualName = null;
       var split = piece.split(_SPACE_REGEX);
       if (split.length > 1) {
-        if (split[1].endsWith(">")) throw new StateError(piece);
         piece = split[0];
         actualName = split[1];
       } else {
@@ -193,9 +192,9 @@ class Compiler {
     var name = data["name"];
     if (name.startsWith("_")) return;
 
-    List<String> names = [];
     List<Map> functions = [];
-    _handleClassChildren([isFromObj = false, Map c, isTopLevel = true]) {
+    List<Map> staticFields = [];
+    _handleClassChildren([isFromObj = false, Map c, isTopLevel = true, Class cObj]) {
       List<String> accessors = [];
       Map<String, Map> getters = {};
       Map<String, Map> setters = {};
@@ -247,7 +246,13 @@ class Compiler {
 
         if (type == "field") {
           var data = _info["elements"][type][id];
-          if (!data["name"].startsWith("_")) _handleClassField(output, data);
+          if (!data["name"].startsWith("_")) {
+            if(cObj == null || !cObj.staticFields.contains(data["name"])) {
+              _handleClassField(output, data);
+            } else {
+              staticFields.add(data);
+            }
+          }
         }
       }
 
@@ -281,12 +286,18 @@ class Compiler {
     output.write("$prefix.$name = function $name() {");
 
     _handleClassField(output, {"name": "__isWrapped__", "value": "true"});
-    _handleClassChildren(false, data);
+    _handleClassChildren(false, data, true, c);
 
     if(c != null)
-      c.inheritedFrom.reversed.forEach((superClass) => _handleClassChildren(false, _classes[superClass].key, false));
+      c.inheritedFrom.reversed.forEach((superClass) => _handleClassChildren(false, _classes[superClass].key, false, analyzer.getClass(null, superClass)));
 
     output.write("};");
+
+/*
+    for (var field in staticFields) {
+      _handleClassField(output, field, "$prefix.$name");
+    }
+*/
 
     for (var func in functions) {
       if (NAME_REPLACEMENTS.containsKey(func["name"])) {
@@ -316,7 +327,7 @@ class Compiler {
     _handleClassChildren(true, data);
 
     if(c != null)
-      c.inheritedFrom.reversed.forEach((superClass) => _handleClassChildren(true, _classes[superClass].key, false));
+      c.inheritedFrom.reversed.forEach((superClass) => _handleClassChildren(true, _classes[superClass].key, false, analyzer.getClass(null, superClass)));
 
     output.write("}.bind(returned))();");
     output.write("return returned;};");

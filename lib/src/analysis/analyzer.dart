@@ -3,6 +3,7 @@ part of calzone.analysis;
 VisitorBuilder _VISITOR = new VisitorBuilder()
   ..where(ClassDeclaration, (Analyzer analyzer, Duo duo, ClassDeclaration node) {
     Map data = duo.value;
+    var staticFields = [];
     var tree = [];
 
     _handleClass(ClassDeclaration c) {
@@ -12,6 +13,11 @@ VisitorBuilder _VISITOR = new VisitorBuilder()
       if(c.withClause != null)
         tree.addAll(c.withClause.mixinTypes.map((type) => type.toString()));
 
+      var fields = c.members.where((member) => member is FieldDeclaration && member.isStatic);
+      for(var field in fields) {
+        staticFields.addAll(field.fields.variables.map((variable) => variable.name.toString()));
+      }
+
       if(tree.length > 0)
         analyzer.buildLibrary(duo.key, false);
 
@@ -20,15 +26,16 @@ VisitorBuilder _VISITOR = new VisitorBuilder()
         var vals = analyzer._nodeTree.values.where((val) => val.keys.contains(type));
         if(vals.length > 0) {
           tree.addAll(vals.first[type].inheritedFrom);
+          staticFields.addAll(vals.first[type].staticFields);
         }
       });
     }
 
     _handleClass(node);
 
-    data[node.name.toString()] = new Class(node.name.toString(), tree);
+    data[node.name.toString()] = new Class(node.name.toString(), staticFields, tree);
   })
-  ..where(FormalParameterList, (Analyzer analyzer, Duo duo, ClassDeclaration node) {
+  ..where(FormalParameterList, (Analyzer analyzer, Duo duo, FormalParameterList node) {
     Map data = duo.value;
 
     var f = node.parent;
@@ -42,11 +49,10 @@ VisitorBuilder _VISITOR = new VisitorBuilder()
         if(name == "null")
           name = "";
 
+
         cNode.functions[name] = [];
         node.visitChildren(_PARAM_VISITOR.build(analyzer, cNode.functions[name]));
       } else {
-        var name = c.name.toString();
-
         data[c.name.toString()] = [];
         node.visitChildren(_PARAM_VISITOR.build(analyzer, data[c.name.toString()]));
       }
@@ -57,7 +63,7 @@ VisitorBuilder _VISITOR = new VisitorBuilder()
   });
 
 VisitorBuilder _PARAM_VISITOR = new VisitorBuilder()
-  ..where(FormalParameter, (Analyzer analyzer, output, FormalParameter node) {
+  ..where([DefaultFormalParameter, SimpleFormalParameter, FunctionTypedFormalParameter], (Analyzer analyzer, List output, FormalParameter node) {
     var norm = node;
     if(node is DefaultFormalParameter)
       norm = norm.parameter;
@@ -136,6 +142,8 @@ class Analyzer {
 
   List<Parameter> getFunctionParameters(String library, String function, [String c]) {
     buildLibrary(library);
+    if(function == c)
+      function = "";
 
     if(c != null) {
       if(!_nodeTree[library].containsKey(c))
@@ -155,6 +163,13 @@ class Analyzer {
 
   Class getClass(String library, String c) {
     buildLibrary(library);
+
+    if(library == null) {
+      var length = _nodeTree.values.where((value) => value.containsKey(c));
+      if(length.length > 0)
+        return length.first[c];
+      return null;
+    }
 
     if(!_nodeTree[library].containsKey(c))
       return null;
