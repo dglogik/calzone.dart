@@ -164,12 +164,16 @@ class Compiler {
 
       var fullParamString = parameters.map((p) => p.name).join(",");
 
-      output.write("var returned=($code).call($binding${paramString.length > 0 ? "," : ""}$fullParamString);");
+      StringBuffer tOutput = new StringBuffer();
       if (transform == FunctionTransformation.NORMAL)
-        _base.transformFrom(output, "returned", _TYPE_REGEX.firstMatch(data["type"]).group(2));
+        _base.transformFrom(tOutput, "returned", _TYPE_REGEX.firstMatch(data["type"]).group(2));
       else if (transform == FunctionTransformation.REVERSED)
-        _base.transformTo(output, "returned", _TYPE_REGEX.firstMatch(data["type"]).group(2));
-      output.write("return returned;}");
+        _base.transformTo(tOutput, "returned", _TYPE_REGEX.firstMatch(data["type"]).group(2));
+
+      output.write(tOutput.length > 0 ? "var returned = " : "return ");
+      output.write("($code).call($binding${paramString.length > 0 ? "," : ""}$fullParamString);");
+      output.write(tOutput.length > 0 ? tOutput.toString() + "return returned;}" : "}");
+
       if (withSemicolon) output.write(";");
     }
   }
@@ -183,7 +187,7 @@ class Compiler {
         output.write("enumerable: false");
         output.write(",value:(");
         data["value"]();
-        output.write(")}");
+        output.write(")");
       } else {
         output.write("enumerable: false");
         output.write(",value: ${data["value"]}");
@@ -228,17 +232,23 @@ class Compiler {
           if (name.startsWith("_")) continue;
 
           if (data["kind"] == "constructor" && isTopLevel) {
-            constructor.write("var __obj__ = (");
+            var isDefault = name.length == 0;
+            var buf = isDefault ? constructor : functions;
+            if(!isDefault)
+              functions.write("module.exports.${classData["name"]}.$name = function() {");
+            buf.write("var __obj__ = (");
             var code = data["code"] == null || data["code"].length == 0
                 ? "function(){}"
                 : "(" + data["code"].substring(data["code"].indexOf(":") + 2) + "[0])";
             var func = classData["name"];
-            _handleFunction(constructor, data,
+            _handleFunction(buf, data,
                 _getParamsFromInfo(data["type"], analyzer.getFunctionParameters(library, func, classData["name"])),
                 codeStr: code,
                 withSemicolon: false,
                 transform: FunctionTransformation.NONE);
-            constructor.write(").apply(this, arguments);");
+            buf.write(").apply(this, arguments);");
+            if(!isDefault)
+              functions.write("return module.exports.${classData["name"]}._(__obj__);};");
             continue;
           }
 
@@ -262,6 +272,7 @@ class Compiler {
               if(memberData["children"].map((f) => _info["elements"][f.split("/")[0]][f.split("/")[1]]).contains(NAME_REPLACEMENTS[data["name"]]))
                 continue;
               data["name"] = NAME_REPLACEMENTS[data["name"]];
+              name = data["name"];
             }
 
             if (data["modifiers"]["static"] || data["modifiers"]["factory"]) {
@@ -276,7 +287,7 @@ class Compiler {
 
               _handleFunction(functions, data,
                   _getParamsFromInfo(data["type"], analyzer.getFunctionParameters(library, name, classData["name"])),
-                  prefix: "module.exports.$name.prototype",
+                  prefix: "module.exports.${classData["name"]}.prototype",
                   binding: "this.__obj__",
                   codeStr: "this.__obj__.${data["code"].split(":")[0]}");
 
@@ -312,7 +323,8 @@ class Compiler {
           fields.write(",get: function() { var returned = (");
           _handleFunction(fields, getters[accessor], _getParamsFromInfo(getters[accessor]["type"]),
               binding: "this.__obj__",
-              transform: FunctionTransformation.NONE);
+              transform: FunctionTransformation.NONE,
+              withSemicolon: false);
           fields.write(").apply(this, arguments);");
           _base.transformFrom(fields, "returned", getters[accessor]["type"]);
           fields.write("return returned;}");
@@ -324,7 +336,7 @@ class Compiler {
           fields.write("(");
           _handleFunction(fields, setters[accessor], _getParamsFromInfo(setters[accessor]["type"]),
               binding: "this.__obj__",
-              transform: FunctionTransformation.NONE);
+              withSemicolon: false);
           fields.write(").call(this, v);}");
         }
 
@@ -343,9 +355,8 @@ class Compiler {
 
     output.write("module.exports.$name = function $name() {");
     output.write(constructor.toString());
-    output.write("return module.exports.$name._(__obj__)};");
+    output.write("return module.exports.$name._(__obj__);};");
 
-    // TODO: Support for operator overloading.
     output.write("""
     Object.defineProperty(module.exports.$name, 'class', {
       get: function() {
@@ -382,7 +393,7 @@ class Compiler {
                 classObj: analyzer.getClass(null, superClass)));
 
           output.write("}.bind(returned))();");
-          output.write("return returned;};");
+          output.write("return returned;}");
         }
       }, "module.exports.$name");
 
