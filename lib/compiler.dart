@@ -14,6 +14,12 @@ RegExp _TYPE_REGEX = new RegExp(r"\(([^]*)\) -> ([^]+)");
 RegExp _COMMA_REGEX = new RegExp(r",(?!([^(<]+[)>]))");
 RegExp _SPACE_REGEX = new RegExp(r" (?!([^(<]+[)>]))");
 
+enum FunctionTransformation {
+  NORMAL,
+  REVERSED,
+  NONE
+}
+
 List<dynamic> _getTypeTree(String type) {
   RegExp regex = new RegExp(r"([A-Za-z]+)(?:\<([\w\s,]+)\>)*");
   var tree = [];
