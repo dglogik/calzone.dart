@@ -53,8 +53,9 @@ class Class implements NamedNode {
   final List<String> inheritedFrom;
 
   final String name;
+  final String libraryName;
 
-  Class(this.name, [this.staticFields = const [], this.inheritedFrom = const []]);
+  Class(this.name, this.libraryName, [this.staticFields = const [], this.inheritedFrom = const []]);
 }
 
 class Parameter implements NamedNode {

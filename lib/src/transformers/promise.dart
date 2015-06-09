@@ -32,7 +32,7 @@ class PromiseTransformer implements TypeTransformer {
     }
 
     output.write("""
-      if(obj.constructor.name === "_Promise") {
+      if(obj.constructor.name === "_Future") {
         var promise = new $promiseName(function(then, error) {
           obj.then\$2\$onError({
             call\$1:function(val) {

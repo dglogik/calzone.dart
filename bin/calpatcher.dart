@@ -49,6 +49,10 @@ global.dartDeferredLibraryLoader = function(uri, successCallback, errorCallback)
 
   var index = data.length;
   var reversed = []..addAll(data.reversed);
+
+  var foundTypeCheck = false;
+  var foundMain = false;
+
   for (var line in reversed) {
     index--;
     if (line.contains("// END invoke [main].")) {
@@ -56,9 +60,18 @@ global.dartDeferredLibraryLoader = function(uri, successCallback, errorCallback)
       continue;
     }
 
+    if (line.contains("buildFunctionType: function(returnType, parameterTypes, optionalParameterTypes) {")) {
+      data[index + 1] = "var proto = Object.create(new H.RuntimeFunctionType(returnType, parameterTypes, optionalParameterTypes, null)); proto._isTest\$1 = function() { return true; }; return proto;";
+      foundTypeCheck = true;
+      if(foundMain && foundTypeCheck)
+        break;
+    }
+
     if (line.contains("main: [function(args) {")) {
       data.removeRange(index + 1, index + 4);
-      break;
+      foundMain = true;
+      if(foundMain && foundTypeCheck)
+        break;
     }
   }
 

@@ -6,9 +6,23 @@ class ClosureTransformer implements TypeTransformer {
 
   ClosureTransformer();
 
-  // TODO
-  dynamicTransformTo(StringBuffer output, List<String> globals) {}
-    
+  dynamicTransformTo(StringBuffer output, List<String> globals) {
+    output.write(r"""
+      if(typeof obj === 'function') {
+        var argCount = (new RegExp(/function[^]*\(([^]*)\)/)).exec(obj.toString())[1].split(',').length;
+        var returned = {};
+        returned['call$' + argCount] = function() {
+          var args = Array.prototype.slice.call(arguments);
+          args.forEach(function(arg, index) {
+            args[index] = dynamicFrom(arg);
+          });
+          return dynamicTo(obj.apply(this, args));
+        };
+        return returned;
+      }
+    """);
+  }
+
   // TODO
   dynamicTransformFrom(StringBuffer output, List<String> globals) {}
 

@@ -10,6 +10,9 @@ VisitorBuilder _VISITOR = new VisitorBuilder()
       if(c.extendsClause != null)
         tree.add(c.extendsClause.superclass.toString());
 
+      if(c.implementsClause != null)
+        tree.addAll(c.implementsClause.interfaces.map((type) => type.toString()));
+
       if(c.withClause != null)
         tree.addAll(c.withClause.mixinTypes.map((type) => type.toString()));
 
@@ -33,7 +36,7 @@ VisitorBuilder _VISITOR = new VisitorBuilder()
 
     _handleClass(node);
 
-    data[node.name.toString()] = new Class(node.name.toString(), staticFields, tree);
+    data[node.name.toString()] = new Class(node.name.toString(), duo.key, staticFields, tree);
   })
   ..where(FormalParameterList, (Analyzer analyzer, Duo duo, FormalParameterList node) {
     Map data = duo.value;

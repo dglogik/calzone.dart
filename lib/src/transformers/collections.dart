@@ -52,6 +52,11 @@ class CollectionsTransformer implements TypeTransformer {
           return dynamicFrom(e);
         });
       }
+      if(obj.constructor.name === '_JsonMap') {
+        var a = obj._original;
+        Object.keys(a).forEach(function(key) { a[key] = dynamicFrom(a[key]); });
+        return a;
+      }
       if(obj.constructor.name === 'JsLinkedHashMap') {
         var a = {};
         objEach(obj._strings, function(cell) {
@@ -165,6 +170,12 @@ class CollectionsTransformer implements TypeTransformer {
         if (!globals.contains(_OBJ_EACH_PREFIX)) globals.add(_OBJ_EACH_PREFIX);
 
         output.write("""
+          if(a.constructor.name === '_JsonMap') {
+            a = a._original;
+            Object.keys(a).forEach(function(key) { a[key] = dynamicFrom(a[key]); });
+            return;
+          }
+
           var keys = [];
           var values = [];
           if(a._strings) {
@@ -210,17 +221,24 @@ class CollectionsTransformer implements TypeTransformer {
       if (!globals.contains(_OBJ_EACH_PREFIX)) globals.add(_OBJ_EACH_PREFIX);
 
       output.write("""
-        var keys = [];
-        var values = [];
-        objEach($name._strings, function(cell) {
-          keys.push(cell.hashMapCellKey);
-          values.push(cell.hashMapCellValue);
-        });
+        if($name.constructor.name === '_JsonMap') {
+          $name = $name._original;
+          Object.keys($name).forEach(function(key) { $name[key] = dynamicFrom($name[key]); });
+        } else {
+          var keys = [];
+          var values = [];
+          if($name._strings) {
+            objEach($name._strings, function(cell) {
+              keys.push(cell.hashMapCellKey);
+              values.push(cell.hashMapCellValue);
+            });
+          }
       """);
 
       var isJsMap = _usePolyfill && tree.length > 2 && tree[1] != "String";
       if (isJsMap) {
-        if (!globals.contains(_MAP_PREFIX)) globals.add(_MAP_PREFIX);
+        if (!globals.contains(_MAP_PREFIX))
+          globals.add(_MAP_PREFIX);
         output.write("$name = new \$Map();");
         output.write("keys.forEach(function(key, i) {");
         _handleTree(tree[1], "key", "keys");
@@ -237,6 +255,7 @@ class CollectionsTransformer implements TypeTransformer {
         output.write(
             "keys.forEach(function(key, index) { $name[key] = values[index]; });");
       }
+      output.write("}");
     }
   }
 }

@@ -10,14 +10,18 @@ class Compiler {
   Map<String, Duo<Map, bool>> _classes = {};
   List<String> _globals = [];
 
-  Compiler(String dartFile, this._info, { this.typeTransformers : const [] }): analyzer = new Analyzer(dartFile) {
+  Compiler(String dartFile, this._info, {this.typeTransformers: const []})
+      : analyzer = new Analyzer(dartFile) {
     _base = new BaseTypeTransformer(this);
   }
 
-  Compiler.fromPath(String dartFile, String path, { List<TypeTransformer> typeTransformers })
-      : this(dartFile, JSON.decode(new File(path).readAsStringSync()), typeTransformers: typeTransformers);
+  Compiler.fromPath(String dartFile, String path,
+      {List<TypeTransformer> typeTransformers})
+      : this(dartFile, JSON.decode(new File(path).readAsStringSync()),
+          typeTransformers: typeTransformers);
 
-  List<Parameter> _getParamsFromInfo(String typeStr, [List<Parameter> analyzerParams]) {
+  List<Parameter> _getParamsFromInfo(String typeStr,
+      [List<Parameter> analyzerParams]) {
     String type = _TYPE_REGEX.firstMatch(typeStr).group(1);
 
     int paramNameIndex = 1;
@@ -25,13 +29,11 @@ class Compiler {
     var isOptional = false;
     var isPositional = false;
 
-    if (type.length <= 0)
-      return [];
+    if (type.length <= 0) return [];
 
     List<String> p = type.split(_COMMA_REGEX)
       ..removeWhere((piece) => piece.trim().length == 0);
-    if (p == null || p.length == 0)
-      return [];
+    if (p == null || p.length == 0) return [];
     List<Parameter> parameters = p.map((String piece) {
       piece = piece.trim();
 
@@ -98,16 +100,20 @@ class Compiler {
         }
       }
 
-      ParameterKind kind = isOptional ? ParameterKind.NAMED : (isPositional ? ParameterKind.POSITIONAL : ParameterKind.REQUIRED);
+      ParameterKind kind = isOptional
+          ? ParameterKind.NAMED
+          : (isPositional ? ParameterKind.POSITIONAL : ParameterKind.REQUIRED);
 
       return new Parameter(kind, piece, actualName);
     }).toList();
 
-    if(analyzerParams != null) {
+    if (analyzerParams != null) {
       parameters.forEach((Parameter param) {
         var matches = analyzerParams.where((p) => p.name == param.name);
-        if(matches.length > 0 && matches.first.type != ParameterKind.REQUIRED) {
-          parameters[parameters.indexOf(param)] = new Parameter(param.kind, param.type, param.name, matches.first.defaultValue);
+        if (matches.length > 0 &&
+            matches.first.type != ParameterKind.REQUIRED) {
+          parameters[parameters.indexOf(param)] = new Parameter(
+              param.kind, param.type, param.name, matches.first.defaultValue);
         }
       });
     }
@@ -115,20 +121,19 @@ class Compiler {
     return parameters;
   }
 
-
-  _handleFunction(StringBuffer output, Map data, List<Parameter> parameters, { String prefix, String binding : "this", String codeStr,
-      withSemicolon : true, FunctionTransformation transform : FunctionTransformation.NORMAL }) {
+  _handleFunction(StringBuffer output, Map data, List<Parameter> parameters,
+      {String prefix, String binding: "this", String codeStr,
+      withSemicolon: true,
+      FunctionTransformation transform: FunctionTransformation.NORMAL}) {
     if (prefix == null) output.write("function(");
     else output.write("$prefix.${data["name"]} = function(");
 
     var paramStringList = []..addAll(parameters);
-    paramStringList.removeWhere(
-        (param) => param.kind == ParameterKind.NAMED);
+    paramStringList.removeWhere((param) => param.kind == ParameterKind.NAMED);
 
     var paramString = paramStringList.map((param) => param.name).join(",");
     output.write("$paramString");
-    if (parameters.any(
-        (param) => param.kind == ParameterKind.NAMED)) {
+    if (parameters.any((param) => param.kind == ParameterKind.NAMED)) {
       if (paramString.length > 0) output.write(",");
       output.write("_optObj_){_optObj_ = _optObj_ || {};");
     } else {
@@ -141,38 +146,41 @@ class Compiler {
         var name = param.name;
         var declaredType = param.type;
 
-        if (param.kind == ParameterKind.POSITIONAL)
-          output.write("$name = typeof($name) === 'undefined' ? ${param.defaultValue} : $name;");
-        if (param.kind == ParameterKind.NAMED)
-          output.write("var $name = typeof(_optObj_.$name) === 'undefined' ? ${param.defaultValue} : _optObj_.$name;");
+        if (param.kind == ParameterKind.POSITIONAL) output.write(
+            "$name = typeof($name) === 'undefined' ? ${param.defaultValue} : $name;");
+        if (param.kind == ParameterKind.NAMED) output.write(
+            "var $name = typeof(_optObj_.$name) === 'undefined' ? ${param.defaultValue} : _optObj_.$name;");
 
-        if (param.kind != ParameterKind.REQUIRED) output.write("if($name !== null) {");
+        if (param.kind != ParameterKind.REQUIRED) output
+            .write("if($name !== null) {");
 
-        if(transform != FunctionTransformation.REVERSED)
-          _base.transformTo(output, name, declaredType);
-        else
-          _base.transformFrom(output, name, declaredType);
+        if (transform != FunctionTransformation.REVERSED) _base.transformTo(
+            output, name, declaredType);
+        else _base.transformFrom(output, name, declaredType);
 
         if (param.kind != ParameterKind.REQUIRED) output.write("}");
       }
 
-      code = codeStr != null
-          ? codeStr
-          : (code.trim().startsWith(":") == false
-              ? "$binding." + code.substring(0, code.indexOf(":"))
-              : code.substring(code.indexOf(":") + 2));
+      code =
+          codeStr != null
+              ? codeStr
+              : (code.trim().startsWith(":") == false
+                  ? "$binding." + code.substring(0, code.indexOf(":"))
+                  : code.substring(code.indexOf(":") + 2));
 
       var fullParamString = parameters.map((p) => p.name).join(",");
 
       StringBuffer tOutput = new StringBuffer();
       if (transform == FunctionTransformation.NORMAL)
-        _base.transformFrom(tOutput, "returned", _TYPE_REGEX.firstMatch(data["type"]).group(2));
+        _base.transformFrom(tOutput, "returned", data["returnType"]);
       else if (transform == FunctionTransformation.REVERSED)
-        _base.transformTo(tOutput, "returned", _TYPE_REGEX.firstMatch(data["type"]).group(2));
+        _base.transformTo(tOutput, "returned", data["returnType"]);
 
       output.write(tOutput.length > 0 ? "var returned = " : "return ");
-      output.write("($code).call($binding${paramString.length > 0 ? "," : ""}$fullParamString);");
-      output.write(tOutput.length > 0 ? tOutput.toString() + "return returned;}" : "}");
+      output.write(
+          "($code).call($binding${paramString.length > 0 ? "," : ""}$fullParamString);");
+      output.write(
+          tOutput.length > 0 ? tOutput.toString() + "return returned;}" : "}");
 
       if (withSemicolon) output.write(";");
     }
@@ -183,7 +191,7 @@ class Compiler {
     output.write("Object.defineProperty($prefix, \"$name\", {");
 
     if (data["value"] != null) {
-      if(data["value"] is Function) {
+      if (data["value"] is Function) {
         output.write("enumerable: false");
         output.write(",value:(");
         data["value"]();
@@ -209,12 +217,13 @@ class Compiler {
     var name = data["name"];
     if (name.startsWith("_")) return;
 
-    Map<String, StringBuffer> methods = {};
+    List<String> names = [];
+    List<StringBuffer> methods = [];
     StringBuffer constructor = new StringBuffer();
     StringBuffer functions = new StringBuffer();
     StringBuffer fields = new StringBuffer();
 
-    _handleClassChildren(Map memberData, {bool isTopLevel : true, Class classObj}) {
+    _handleClassChildren(Map memberData, {bool isTopLevel: true, Class classObj}) {
       List<String> accessors = [];
       Map<String, Map> getters = {};
       Map<String, Map> setters = {};
@@ -229,31 +238,35 @@ class Compiler {
           var data = _info["elements"][type][id];
           var name = data["name"];
 
+          if (names.contains(name)) continue;
+          names.add(name);
+
           if (name.startsWith("_")) continue;
 
           if (data["kind"] == "constructor" && isTopLevel) {
             var isDefault = name.length == 0;
             var buf = isDefault ? constructor : functions;
-            if(!isDefault)
-              functions.write("module.exports.${classData["name"]}.$name = function() {");
+            if (!isDefault) functions.write(
+                "module.exports.${classData["name"]}.$name = function() {");
             buf.write("var __obj__ = (");
             var code = data["code"] == null || data["code"].length == 0
                 ? "function(){}"
-                : "(" + data["code"].substring(data["code"].indexOf(":") + 2) + "[0])";
+                : "(" +
+                    data["code"].substring(data["code"].indexOf(":") + 2) +
+                    "[0])";
             var func = classData["name"];
-            _handleFunction(buf, data,
-                _getParamsFromInfo(data["type"], analyzer.getFunctionParameters(library, func, classData["name"])),
+            _handleFunction(buf, data, _getParamsFromInfo(data["type"], analyzer
+                    .getFunctionParameters(library, func, classData["name"])),
                 codeStr: code,
                 withSemicolon: false,
                 transform: FunctionTransformation.NONE);
             buf.write(").apply(this, arguments);");
-            if(!isDefault)
-              functions.write("return module.exports.${classData["name"]}._(__obj__);};");
+            if (!isDefault) functions.write(
+                "return module.exports.${classData["name"]}._(__obj__);};");
             continue;
           }
 
-          if(data["kind"] == "constructor" && !isTopLevel)
-            continue;
+          if (data["kind"] == "constructor" && !isTopLevel) continue;
 
           if (data["code"].startsWith("set\$")) {
             if (!accessors.contains(name)) accessors.add(name);
@@ -269,44 +282,54 @@ class Compiler {
 
           if (data["code"].length > 0) {
             if (NAME_REPLACEMENTS.containsKey(data["name"])) {
-              if(memberData["children"].map((f) => _info["elements"][f.split("/")[0]][f.split("/")[1]]).contains(NAME_REPLACEMENTS[data["name"]]))
-                continue;
+              if (memberData["children"]
+                  .map((f) =>
+                      _info["elements"][f.split("/")[0]][f.split("/")[1]])
+                  .contains(NAME_REPLACEMENTS[data["name"]])) continue;
               data["name"] = NAME_REPLACEMENTS[data["name"]];
               name = data["name"];
             }
 
             if (data["modifiers"]["static"] || data["modifiers"]["factory"]) {
-              if(isTopLevel)
-                _handleFunction(functions, data,
-                    _getParamsFromInfo(data["type"], analyzer.getFunctionParameters(library, data["name"], classData["name"])),
-                    prefix: "module.exports.$name",
-                    codeStr: "init.allClasses.$name.${data["code"].split(":")[0]}");
+              if (isTopLevel) _handleFunction(functions, data,
+                  _getParamsFromInfo(data["type"], analyzer
+                      .getFunctionParameters(
+                          library, data["name"], classData["name"])),
+                  prefix: "module.exports.${classData["name"]}",
+                  codeStr: "init.allClasses.${classData["name"]}.${data["code"].split(":")[0]}");
             } else {
-              if(!data["code"].contains(":") || methods.containsKey(data["name"]))
-                continue;
-
-              _handleFunction(functions, data,
-                  _getParamsFromInfo(data["type"], analyzer.getFunctionParameters(library, name, classData["name"])),
+              _handleFunction(functions, data, _getParamsFromInfo(data["type"],
+                      analyzer.getFunctionParameters(
+                          library, name, classData["name"])),
                   prefix: "module.exports.${classData["name"]}.prototype",
                   binding: "this.__obj__",
                   codeStr: "this.__obj__.${data["code"].split(":")[0]}");
 
               StringBuffer buf = new StringBuffer();
-              methods[name] = buf;
+              methods.add(buf);
 
-              buf.write("if(proto.$name) { this.__obj__.${data["code"].split(":")[0]} = ");
-              _handleFunction(buf, data, _getParamsFromInfo(data["type"]),
-                  codeStr: "proto.$name",
+              var params = _getParamsFromInfo(data["type"]);
+              var dartName = data["code"].split(":")[0];
+
+              buf.write("if(proto.$name) { this.__obj__.$dartName = ");
+              _handleFunction(buf, data, params,
+                  codeStr: "this.$name",
+                  withSemicolon: false,
                   transform: FunctionTransformation.REVERSED);
-              buf.write("}");
+              buf.write(".bind(this);}");
             }
           }
         }
 
         if (type == "field") {
           var data = _info["elements"][type][id];
+
+          if (names.contains(data["name"])) continue;
+          names.add(data["name"]);
+
           if (!data["name"].startsWith("_")) {
-            if(classObj == null || !classObj.staticFields.contains(data["name"])) {
+            if (classObj == null ||
+                !classObj.staticFields.contains(data["name"])) {
               _handleClassField(fields, data);
             } else {
               _handleClassField(functions, data, "module.exports.$name");
@@ -321,7 +344,8 @@ class Compiler {
         fields.write("enumerable: true");
         if (getters[accessor] != null) {
           fields.write(",get: function() { var returned = (");
-          _handleFunction(fields, getters[accessor], _getParamsFromInfo(getters[accessor]["type"]),
+          _handleFunction(fields, getters[accessor],
+              _getParamsFromInfo(getters[accessor]["type"]),
               binding: "this.__obj__",
               transform: FunctionTransformation.NONE,
               withSemicolon: false);
@@ -334,9 +358,9 @@ class Compiler {
           fields.write(",set: function(v) {");
           _base.transformTo(fields, "v", setters[accessor]["type"]);
           fields.write("(");
-          _handleFunction(fields, setters[accessor], _getParamsFromInfo(setters[accessor]["type"]),
-              binding: "this.__obj__",
-              withSemicolon: false);
+          _handleFunction(fields, setters[accessor],
+              _getParamsFromInfo(setters[accessor]["type"]),
+              binding: "this.__obj__", withSemicolon: false);
           fields.write(").call(this, v);}");
         }
 
@@ -348,27 +372,38 @@ class Compiler {
 
     _handleClassChildren(data, classObj: c);
 
-    if(c != null)
-      c.inheritedFrom.reversed.forEach((superClass) => _handleClassChildren(_classes[superClass].key,
-          isTopLevel: false,
-          classObj: analyzer.getClass(null, superClass)));
+    if (c != null) {
+      c.inheritedFrom.reversed.forEach((superClass) {
+        var classObj = analyzer.getClass(null, superClass);
+        if(classObj != null)
+          _handleClassChildren(
+              _classes[superClass] != null ? _classes[superClass].key : _classes[classObj.libraryName + "." + superClass].key,
+              isTopLevel: false,
+              classObj: classObj);
+      });
+    }
 
     output.write("module.exports.$name = function $name() {");
     output.write(constructor.toString());
-    output.write("return module.exports.$name._(__obj__);};");
+
+    _handleClassField(output, {"name": "__isWrapped__", "value": "true"});
+    _handleClassField(output, {"name": "__obj__", "value": "__obj__"});
+
+    output.write(fields.toString());
+    output.write("};");
 
     output.write("""
     Object.defineProperty(module.exports.$name, 'class', {
       get: function() {
         function $name() {
-          module.exports[$name].apply(this, arguments);
+          module.exports.$name.apply(this, arguments);
           var proto = Object.getPrototypeOf(this);
     """);
-    methods.values.forEach((method) => output.write(method.toString()));
+    methods.forEach((method) => output.write(method.toString()));
     output.write("""
         }
 
-        Node.prototype = Object.create(module.exports[$name].prototype);
+        $name.prototype = Object.create(module.exports.$name.prototype);
 
         return $name;
       }
@@ -376,26 +411,21 @@ class Compiler {
     """);
 
     _handleClassField(output, {
-        "name": "_",
-        "value": () {
-          output.write(
-              "function $name(__obj__) {var returned = Object.create($prefix.$name.prototype);");
-          output.write("(function() {");
+      "name": "_",
+      "value": () {
+        output.write(
+            "function $name(__obj__) {var returned = Object.create($prefix.$name.prototype);");
+        output.write("(function() {");
 
-          _handleClassField(output, {"name": "__isWrapped__", "value": "true"});
-          _handleClassField(output, {"name": "__obj__", "value": "__obj__"});
+        _handleClassField(output, {"name": "__isWrapped__", "value": "true"});
+        _handleClassField(output, {"name": "__obj__", "value": "__obj__"});
 
-          output.write(fields.toString());
+        output.write(fields.toString());
 
-          if(c != null)
-            c.inheritedFrom.reversed.forEach((superClass) => _handleClassChildren(_classes[superClass].key,
-                isTopLevel: false,
-                classObj: analyzer.getClass(null, superClass)));
-
-          output.write("}.bind(returned))();");
-          output.write("return returned;}");
-        }
-      }, "module.exports.$name");
+        output.write("}.bind(returned))();");
+        output.write("return returned;}");
+      }
+    }, "module.exports.$name");
 
     output.write(functions.toString());
   }
@@ -413,27 +443,30 @@ class Compiler {
 
         var childData = _info["elements"][type][id];
 
-        var isIncluded = include.contains(library["name"] + "." + childData["name"]) || include.contains(library["name"]);
+        var isIncluded = include
+                .contains(library["name"] + "." + childData["name"]) ||
+            include.contains(library["name"]);
 
         if (type == "class") {
-          _classes[childData["name"]] = new Duo(childData, isIncluded);
+          _classes[isIncluded ? childData["name"] : library["name"] + "." + childData["name"]] = new Duo(childData, isIncluded);
         }
 
-        if (isIncluded)
-          children.add(new Duo(library["name"], childData));
+        if (isIncluded) children.add(new Duo(library["name"], childData));
       }
     }
 
-    output.write("function dynamicTo(obj) {if(typeof(obj) === 'undefined' || obj === null) { return obj; }");
+    output.write(
+        "function dynamicTo(obj) {if(typeof(obj) === 'undefined' || obj === null) { return obj; }");
     _base.dynamicTransformTo(output, _globals);
-    for(var transformer in typeTransformers) {
+    for (var transformer in typeTransformers) {
       transformer.dynamicTransformTo(output, _globals);
     }
     output.write("return obj;}");
 
-    output.write("function dynamicFrom(obj) {if(typeof(obj) === 'undefined' || obj === null) { return obj; }");
+    output.write(
+        "function dynamicFrom(obj) {if(typeof(obj) === 'undefined' || obj === null) { return obj; }");
     _base.dynamicTransformFrom(output, _globals);
-    for(var transformer in typeTransformers) {
+    for (var transformer in typeTransformers) {
       transformer.dynamicTransformFrom(output, _globals);
     }
     output.write("return obj;}");
@@ -442,8 +475,9 @@ class Compiler {
       var type = child.value["kind"];
 
       if (type == "function") {
-        _handleFunction(output, child.value,
-            _getParamsFromInfo(child.value["type"], analyzer.getFunctionParameters(child.key, child.value["name"])),
+        _handleFunction(output, child.value, _getParamsFromInfo(
+                child.value["type"],
+                analyzer.getFunctionParameters(child.key, child.value["name"])),
             prefix: "module.exports");
       }
 
