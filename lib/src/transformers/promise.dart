@@ -1,6 +1,6 @@
 part of calzone.transformers;
 
-final String _PROMISE_PREFIX = "var \$Promise = require('es6-promises');";
+final String _PROMISE_PREFIX = "var \$Promise = Promise || require('es6-promises');";
 
 // ES6 Promise <-> Future
 class PromiseTransformer implements TypeTransformer {
@@ -12,10 +12,10 @@ class PromiseTransformer implements TypeTransformer {
 
   dynamicTransformTo(StringBuffer output, List<String> globals) =>
     output.write("""
-      if(obj instanceof \$Promise) {
+      if((typeof(obj) === 'object' || typeof(obj) === 'function') && typeof(obj.then) === 'function' && typeof(obj.catch) === 'function') {
         var completer = new P._SyncCompleter(new P._Future(0, \$.Zone__current, null));
         obj.then(function(then) {
-          completer.complete\$1(dynamicTo(then));
+          completer.complete\$1(null, dynamicTo(then));
         }).catch(function(err) {
           completer.completeError\$1(err);
         });
@@ -56,7 +56,7 @@ class PromiseTransformer implements TypeTransformer {
     output.write("$name.then(function(then) {");
     if(tree.length > 1)
       base.transformToDart(output, base, "then", tree[1], globals);
-    output.write("completer.complete\$1(then);}).catch(function(err) {completer.completeError\$1(err);});");
+    output.write("completer.complete\$1(null, then);}).catch(function(err) {completer.completeError\$1(err);});");
     output.write("$name = completer.future;");
   }
 

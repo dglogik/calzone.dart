@@ -63,7 +63,7 @@ class Compiler {
                 .where((e) => e.length > 0)
                 .map((e) => e.contains(" ")
                     ? e.split(" ")[0]
-                    : (_classes.containsKey(_getTypeTree(e)[0])
+                    : (_classes.containsKey(_getTypeTree(e)[0]) || _classes.keys.any((key) => key.endsWith(".${_getTypeTree(e)[0]}"))
                         ? e
                         : "dynamic"))
                 .toList();
@@ -362,6 +362,10 @@ class Compiler {
               _getParamsFromInfo(setters[accessor]["type"]),
               binding: "this.__obj__", withSemicolon: false);
           fields.write(").call(this, v);}");
+        } else if(getters[accessor] != null) {
+          fields.write(",set: function(v) {");
+          _base.transformTo(fields, "v", getters[accessor]["type"]);
+          fields.write("this.__obj__.${getters[accessor]['code'].split(':')[0]} = function() { return v; };}");
         }
 
         fields.write("});");
