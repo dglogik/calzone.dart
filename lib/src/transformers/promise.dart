@@ -36,8 +36,7 @@ class PromiseTransformer implements TypeTransformer {
         var promise = new $promiseName(function(then, error) {
           obj.then\$2\$onError({
             call\$1:function(val) {
-              transformFrom(val);
-              then(val);
+              then(dynamicFrom(val));
             }
           }, {
             call\$1: function(err) {
@@ -66,8 +65,10 @@ class PromiseTransformer implements TypeTransformer {
       globals.add(_PROMISE_PREFIX);
 
     output.write("var promise = new ${_usePolyfill ? "\$Promise" : "Promise"}(function(then, error) {$name.then\$2\$onError({call\$1:function(val) {");
-    if(tree.length > 1)
+    if(tree.length > 1) {
       base.transformFromDart(output, base, "val", tree[1], globals);
+    } else
+      output.write("val = dynamicFrom(val);");
     output.write("then(val); }}, {call\$1: function(err) {error(err);}});});");
     output.write("$name = promise;");
   }

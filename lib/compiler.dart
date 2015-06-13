@@ -29,8 +29,8 @@ List<dynamic> _getTypeTree(String type) {
   tree.add(match.group(1));
 
   if (match.group(2) != null && match.group(2).trim().length > 0 && match.group(2) != type) {
-    for (var group in match.group(2).split(r"[\,]{1}\s*")) tree
-        .addAll(_getTypeTree(group));
+    for (var group in match.group(2).split(r"[\,]{1}\s*"))
+      tree.addAll(_getTypeTree(group));
   }
 
   return tree;

@@ -71,6 +71,9 @@ class CollectionsTransformer implements TypeTransformer {
   transformToDart(StringBuffer output, TypeTransformer base, String name,
       List tree, List<String> globals) {
     _handleTree(tree, [binding = "a", thisObj = "this"]) {
+      if(tree is String)
+        tree = [tree];
+
       if (tree[0] == "Map") {
         var k = "P.String";
         var v = "null";
@@ -160,7 +163,11 @@ class CollectionsTransformer implements TypeTransformer {
   @override
   transformFromDart(StringBuffer output, TypeTransformer base, String name,
       List tree, List<String> globals) {
+
     _handleTree(tree, [binding = "a", thisObj = "this"]) {
+      if(tree is String)
+        tree = [tree];
+
       if (tree[0] == "List" && tree.length > 1) {
         output.write("$thisObj[i] = a.map(function(a, i) {");
         _handleTree(tree[1]);
@@ -213,9 +220,12 @@ class CollectionsTransformer implements TypeTransformer {
       }
     }
 
-    if (tree[0] == "List" && tree.length > 1) {
-      output.write("$name = $name.forEach(function(a, i) {");
-      _handleTree(tree[1]);
+    if (tree[0] == "List") {
+      output.write("$name = [].concat($name);$name.forEach(function(a, i) {");
+      if(tree.length > 1)
+        _handleTree(tree[1]);
+      else
+        output.write("a = dynamicFrom(a);");
       output.write("}, $name);");
     } else if (tree[0] == "Map") {
       if (!globals.contains(_OBJ_EACH_PREFIX)) globals.add(_OBJ_EACH_PREFIX);

@@ -57,16 +57,13 @@ class Compiler {
       if (match != null) {
         List functionParams =
             match
-                .group(1)
-                .split(",")
-                .map((e) => e.replaceAll(r"[\[\]\{\}]", "").trim())
-                .where((e) => e.length > 0)
-                .map((e) => e.contains(" ")
-                    ? e.split(" ")[0]
-                    : (_classes.containsKey(_getTypeTree(e)[0]) || _classes.keys.any((key) => key.endsWith(".${_getTypeTree(e)[0]}"))
-                        ? e
-                        : "dynamic"))
-                .toList();
+              .group(1)
+              .split(",")
+              .map((e) => e.replaceAll(r"[\[\]\{\}]", "").trim())
+              .where((e) => e.length > 0)
+              .map((e) => e.contains(" ") ? e.split(" ")[0] :
+                  (_classes.containsKey(_getTypeTree(e)[0]) || _classes.keys.any((key) => key.endsWith("." + _getTypeTree(e)[0]))) ? e : "dynamic")
+              .toList();
 
         var name = "";
         var groupParts = match.group(2).split(" ");
@@ -90,7 +87,7 @@ class Compiler {
         actualName = split[1];
       } else {
         var c = _getTypeTree(split[0])[0];
-        if (c != "Function" && !_classes.containsKey(c)) {
+        if (c != "Function" && !_classes.containsKey(c) && !_classes.keys.any((key) => key.contains(".$c"))) {
           piece = "dynamic";
           actualName = c;
         } else {

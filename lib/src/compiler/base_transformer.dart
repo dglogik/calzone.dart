@@ -25,6 +25,9 @@ class BaseTypeTransformer implements TypeTransformer {
   @override
   transformToDart(StringBuffer output, TypeTransformer base, String name,
       List tree, List<String> globals) {
+
+    if(tree is String)
+      tree = [tree];
     var type = tree[0];
     if (PRIMITIVES.contains(type)) return;
 
@@ -45,7 +48,9 @@ class BaseTypeTransformer implements TypeTransformer {
 
   @override
   transformFromDart(StringBuffer output, TypeTransformer base, String name,
-      List tree, List<String> globals) {
+      tree, List<String> globals) {
+    if(tree is String)
+      tree = [tree];
     var type = tree[0];
     if (PRIMITIVES.contains(type)) return;
 
@@ -61,8 +66,8 @@ class BaseTypeTransformer implements TypeTransformer {
     }
 
     for (TypeTransformer transformer in _compiler.typeTransformers) {
-      if (transformer.types.contains(tree[0])) transformer.transformFromDart(
-          output, this, name, tree, globals);
+      if (transformer.types.contains(tree[0]))
+        transformer.transformFromDart(output, this, name, tree, globals);
     }
   }
 }
