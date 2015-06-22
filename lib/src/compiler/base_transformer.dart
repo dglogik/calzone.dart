@@ -41,8 +41,8 @@ class BaseTypeTransformer implements TypeTransformer {
     }
 
     for (TypeTransformer transformer in _compiler.typeTransformers) {
-      if (transformer.types.contains(type)) transformer.transformToDart(
-          output, this, name, tree, _compiler._globals);
+      if (transformer.types.contains(type))
+        transformer.transformToDart(output, this, name, tree, globals);
     }
   }
 

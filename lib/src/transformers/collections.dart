@@ -110,9 +110,12 @@ class CollectionsTransformer implements TypeTransformer {
         }
         output.write(
             "$thisObj[i] = new P.LinkedHashMap_LinkedHashMap\$_literal(elms,$k,$v);");
-      } else if (tree[0] == "List" && tree.length > 1) {
-        output.write("$binding.forEach(function(a, i) {");
-        _handleTree(tree[1]);
+      } else if (tree[0] == "List") {
+        output.write("$binding = [].concat($binding);a.forEach(function(a, i) {");
+        if(tree.length > 1)
+          _handleTree(tree[1]);
+        else
+          output.write("a = dynamicTo(a);");
         output.write("}, $binding);");
       } else {
         base.transformToDart(output, base, "$thisObj[i]", tree[0], globals);
@@ -153,9 +156,14 @@ class CollectionsTransformer implements TypeTransformer {
       }
       output.write(
           "$name = new P.LinkedHashMap_LinkedHashMap\$_literal(elms,$k,$v);");
-    } else if (tree[0] == "List" && tree.length > 1) {
+    } else if (tree[0] == "List") {
       output.write("$name.forEach(function(a, i) {");
-      _handleTree(tree[1]);
+
+      output.write("$name = [].concat($name);$name.forEach(function(a, i) {");
+      if(tree.length > 1)
+        _handleTree(tree[1]);
+      else
+        output.write("a = dynamicTo(a);");
       output.write("}, $name);");
     }
   }
@@ -168,10 +176,13 @@ class CollectionsTransformer implements TypeTransformer {
       if(tree is String)
         tree = [tree];
 
-      if (tree[0] == "List" && tree.length > 1) {
-        output.write("$thisObj[i] = a.map(function(a, i) {");
-        _handleTree(tree[1]);
-        output.write("}, $binding);");
+      if (tree[0] == "List") {
+        output.write("a = [].concat(a);a.forEach(function(a, i) {");
+        if(tree.length > 1)
+          _handleTree(tree[1]);
+        else
+          output.write("a = dynamicFrom(a);");
+        output.write("}, a); $thisObj[i] = a; }, $binding);");
       } else if (tree[0] == "Map") {
         output.write("this[i] = (function(a) {");
         if (!globals.contains(_OBJ_EACH_PREFIX)) globals.add(_OBJ_EACH_PREFIX);
@@ -213,7 +224,7 @@ class CollectionsTransformer implements TypeTransformer {
           output
               .write("keys.forEach(function(key, i) { a[key] = values[i]; });");
         }
-        output.write("return a");
+        output.write("return a;");
         output.write("}($binding));");
       } else {
         base.transformFromDart(output, base, "this[i]", tree[0], globals);
