@@ -11,6 +11,7 @@ part "src/compiler/base_transformer.dart";
 part "src/compiler/compiler.dart";
 
 RegExp _TYPE_REGEX = new RegExp(r"\(([^]*)\) -> ([^]+)");
+RegExp _TREE_REGEX = new RegExp(r"([A-Za-z]+)(?:\<([\w\s,]+)\>)*");
 RegExp _COMMA_REGEX = new RegExp(r",(?!([^(<]+[)>]))");
 RegExp _SPACE_REGEX = new RegExp(r" (?!([^(<]+[)>]))");
 
@@ -21,10 +22,9 @@ enum FunctionTransformation {
 }
 
 List<dynamic> _getTypeTree(String type) {
-  RegExp regex = new RegExp(r"([A-Za-z]+)(?:\<([\w\s,]+)\>)*");
   var tree = [];
 
-  Match match = regex.firstMatch(type);
+  Match match = _TREE_REGEX.firstMatch(type);
   if (match == null) return tree;
   tree.add(match.group(1));
 

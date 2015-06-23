@@ -168,16 +168,16 @@ class Compiler {
       var fullParamString = parameters.map((p) => p.name).join(",");
 
       StringBuffer tOutput = new StringBuffer();
+
+      var returnType = _TYPE_REGEX.firstMatch(data["type"]).group(2);
       if (transform == FunctionTransformation.NORMAL)
-        _base.transformFrom(tOutput, "returned", data["returnType"]);
+        _base.transformFrom(tOutput, "returned", returnType);
       else if (transform == FunctionTransformation.REVERSED)
-        _base.transformTo(tOutput, "returned", data["returnType"]);
+        _base.transformTo(tOutput, "returned", returnType);
 
       output.write(tOutput.length > 0 ? "var returned = " : "return ");
-      output.write(
-          "($code).call($binding${paramString.length > 0 ? "," : ""}$fullParamString);");
-      output.write(
-          tOutput.length > 0 ? tOutput.toString() + "return returned;}" : "}");
+      output.write("($code).call($binding${paramString.length > 0 ? "," : ""}$fullParamString);");
+      output.write(tOutput.length > 0 ? tOutput.toString() + "return returned;}" : "}");
 
       if (withSemicolon) output.write(";");
     }
