@@ -70,8 +70,8 @@ class CollectionsTransformer implements TypeTransformer {
   @override
   transformToDart(StringBuffer output, TypeTransformer base, String name,
       List tree, List<String> globals) {
-    _handleTree(tree, [binding = "a", thisObj = "this"]) {
-      if(tree is String)
+    _handleTree(tree, [name = "this[i]"]) {
+      if (tree is String)
         tree = [tree];
 
       if (tree[0] == "Map") {
@@ -85,198 +85,94 @@ class CollectionsTransformer implements TypeTransformer {
 
         var isJsMap = _usePolyfill && tree.length > 2 && tree[1] != "String";
         if (isJsMap) {
-          output.write(
-              "var keys = $binding.keys(); var values = $binding.values();");
-          output.write(
-              "keys.forEach(function(key, i) { var value = values[index];");
-          _handleTree(tree[1], "value", "values");
-          _handleTree(tree[2], "key", "keys");
+          output.write("var keys = $name.keys(); var values = $name.values();");
+          output.write("keys.forEach(function(key, i) { var value = values[index];");
+          _handleTree(tree[1], "values[i]");
+          _handleTree(tree[2], "keys[i]");
           output.write("});");
-          output.write(
-              "var elms = keys.reduce(function(arr, key, index) { arr.push(key); arr.push(values[index]); return arr; }, []);");
+          output.write("var elms = keys.reduce(function(arr, key, index) { arr.push(key); arr.push(values[index]); return arr; }, []);");
         } else {
-          if (!globals.contains(_OBJ_EACH_PREFIX)) globals
-              .add(_OBJ_EACH_PREFIX);
-          output.write("objEach($binding, function(a, i) {");
+          if (!globals.contains(_OBJ_EACH_PREFIX)) globals.add(_OBJ_EACH_PREFIX);
+          output.write("objEach($name, function(a, i) {");
           if (tree.length > 2) {
             _handleTree(tree[2]);
           } else {
             output.write("this[i] = dynamicTo(a);");
           }
-          output.write("}, $binding);");
+          output.write("}, $name);");
 
-          output.write(
-              "var elms = Object.keys($binding).reduce(function(arr, key) { arr.push(key); arr.push($binding[key]); return arr; }, []);");
+          output.write("var elms = Object.keys($name).reduce(function(arr, key) { arr.push(key); arr.push($name[key]); return arr; }, []);");
         }
-        output.write(
-            "$thisObj[i] = new P.LinkedHashMap_LinkedHashMap\$_literal(elms,$k,$v);");
+        output.write("$name = new P.LinkedHashMap_LinkedHashMap\$_literal(elms,$k,$v);");
       } else if (tree[0] == "List") {
-        output.write("$binding = [].concat($binding);a.forEach(function(a, i) {");
+        output.write("$name = [].concat($name);$name.forEach(function(a, i) {");
         if(tree.length > 1)
           _handleTree(tree[1]);
         else
           output.write("a = dynamicTo(a);");
-        output.write("}, $binding);");
-      } else {
-        base.transformToDart(output, base, "$thisObj[i]", tree[0], globals);
+        output.write("this[i] = a;}, $name);");
       }
     }
 
-    if (tree[0] == "Map") {
-      var k = "P.String";
-      var v = "null";
-
-      if (tree.length > 2) {
-        if (tree[1][0] != "dynamic") k = "init.allClasses.${tree[1][0]}";
-        if (tree[2][0] != "dynamic") v = "init.allClasses.${tree[2][0]}";
-      }
-
-      var isJsMap = _usePolyfill && tree.length > 2 && tree[1] != "String";
-      if (isJsMap) {
-        output.write("var keys = $name.keys(); var values = $name.values();");
-        output.write(
-            "keys.forEach(function(key, i) { var value = values[index];");
-        _handleTree(tree[1], "value", "values");
-        _handleTree(tree[2], "key", "keys");
-        output.write("});");
-        output.write(
-            "var elms = keys.reduce(function(arr, key, index) { arr.push(key); arr.push(values[index]); return arr; }, []);");
-      } else {
-        if (!globals.contains(_OBJ_EACH_PREFIX)) globals.add(_OBJ_EACH_PREFIX);
-        output.write("objEach($name, function(a, i) {");
-        if (tree.length > 2) {
-          _handleTree(tree[2]);
-        } else {
-          output.write("this[i] = dynamicTo(a);");
-        }
-        output.write("}, $name);");
-
-        output.write(
-            "var elms = Object.keys($name).reduce(function(arr, key) { arr.push(key); arr.push($name[key]); return arr; }, []);");
-      }
-      output.write(
-          "$name = new P.LinkedHashMap_LinkedHashMap\$_literal(elms,$k,$v);");
-    } else if (tree[0] == "List") {
-      output.write("$name.forEach(function(a, i) {");
-
-      output.write("$name = [].concat($name);$name.forEach(function(a, i) {");
-      if(tree.length > 1)
-        _handleTree(tree[1]);
-      else
-        output.write("a = dynamicTo(a);");
-      output.write("}, $name);");
-    }
+    _handleTree(tree, name);
   }
 
   @override
   transformFromDart(StringBuffer output, TypeTransformer base, String name,
       List tree, List<String> globals) {
 
-    _handleTree(tree, [binding = "a", thisObj = "this"]) {
-      if(tree is String)
+    _handleTree(tree, [name = "this[i]"]) {
+      if (tree is String)
         tree = [tree];
 
       if (tree[0] == "List") {
-        output.write("a = [].concat(a);a.forEach(function(a, i) {");
+        output.write("$name = [].concat($name);$name.forEach(function(a, i) {");
         if(tree.length > 1)
           _handleTree(tree[1]);
         else
-          output.write("a = dynamicFrom(a);");
-        output.write("}, a); $thisObj[i] = a; }, $binding);");
+          output.write("this[i] = dynamicFrom(a);");
+        output.write("}, $name);");
       } else if (tree[0] == "Map") {
-        output.write("this[i] = (function(a) {");
         if (!globals.contains(_OBJ_EACH_PREFIX)) globals.add(_OBJ_EACH_PREFIX);
 
         output.write("""
-          if(a.constructor.name === '_JsonMap') {
-            a = a._original;
-            Object.keys(a).forEach(function(key) { a[key] = dynamicFrom(a[key]); });
-            return;
-          }
-
-          var keys = [];
-          var values = [];
-          if(a._strings) {
-            objEach(a._strings, function(cell) {
-              keys.push(cell.hashMapCellKey);
-              values.push(cell.hashMapCellValue);
-            });
-          }
+          if($name.constructor.name === '_JsonMap') {
+            $name = $name._original;
+            Object.keys($name).forEach(function(key) { $name[key] = dynamicFrom($name[key]); });
+          } else {
+            var keys = [];
+            var values = [];
+            if($name._strings) {
+              objEach($name._strings, function(cell) {
+                keys.push(cell.hashMapCellKey);
+                values.push(cell.hashMapCellValue);
+              });
+            }
         """);
 
         var isJsMap = _usePolyfill && tree.length > 2 && tree[1] != "String";
         if (isJsMap) {
-          if (!globals.contains(_MAP_PREFIX)) globals.add(_MAP_PREFIX);
-          output.write("a = new \$Map();");
+          if (!globals.contains(_MAP_PREFIX))
+            globals.add(_MAP_PREFIX);
+          output.write("$name = new \$Map();");
           output.write("keys.forEach(function(key, i) {");
-          _handleTree(tree[1], "key", "keys");
-          _handleTree(tree[2], "value", "values");
-          output.write("a.set(keys[i], values[i]); });");
+          _handleTree(tree[1], "keys[i]");
+          _handleTree(tree[2], "values[i]");
+          output.write("$name.set(keys[i], values[i]); });");
         } else {
-          output.write("a = {};");
-
+          output.write("$name = {};");
           if (tree.length > 2) {
             _handleTree(tree[2], "values");
           } else {
-            output.write(
-                "values.forEach(function(key, i) { values[i] = dynamicFrom(key); });");
-          }
-          output
-              .write("keys.forEach(function(key, i) { a[key] = values[i]; });");
-        }
-        output.write("return a;");
-        output.write("}($binding));");
-      } else {
-        base.transformFromDart(output, base, "this[i]", tree[0], globals);
-      }
-    }
-
-    if (tree[0] == "List") {
-      output.write("$name = [].concat($name);$name.forEach(function(a, i) {");
-      if(tree.length > 1)
-        _handleTree(tree[1]);
-      else
-        output.write("a = dynamicFrom(a);");
-      output.write("}, $name);");
-    } else if (tree[0] == "Map") {
-      if (!globals.contains(_OBJ_EACH_PREFIX)) globals.add(_OBJ_EACH_PREFIX);
-
-      output.write("""
-        if($name.constructor.name === '_JsonMap') {
-          $name = $name._original;
-          Object.keys($name).forEach(function(key) { $name[key] = dynamicFrom($name[key]); });
-        } else {
-          var keys = [];
-          var values = [];
-          if($name._strings) {
-            objEach($name._strings, function(cell) {
-              keys.push(cell.hashMapCellKey);
-              values.push(cell.hashMapCellValue);
-            });
-          }
-      """);
-
-      var isJsMap = _usePolyfill && tree.length > 2 && tree[1] != "String";
-      if (isJsMap) {
-        if (!globals.contains(_MAP_PREFIX))
-          globals.add(_MAP_PREFIX);
-        output.write("$name = new \$Map();");
-        output.write("keys.forEach(function(key, i) {");
-        _handleTree(tree[1], "key", "keys");
-        _handleTree(tree[2], "value", "values");
-        output.write("$name.set(keys[i], values[i]); });");
-      } else {
-        output.write("$name = {};");
-        if (tree.length > 2) {
-          _handleTree(tree[2], "values");
-        } else {
-          output.write(
-              "values.forEach(function(key, i) { values[i] = dynamicFrom(key); });");
+            output.write("values.forEach(function(key, i) { values[i] = dynamicFrom(key); });");
         }
         output.write(
             "keys.forEach(function(key, index) { $name[key] = values[index]; });");
       }
-      output.write("}");
+        output.write("}");
+      }
     }
+
+    _handleTree(tree, name);
   }
 }
