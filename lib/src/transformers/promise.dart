@@ -1,6 +1,6 @@
 part of calzone.transformers;
 
-final String _PROMISE_PREFIX = "var \$Promise = Promise || require('es6-promises');";
+final String _PROMISE_PREFIX = "var \$Promise = typeof(Promise) !== 'undefined' ? Promise : require('es6-promises');";
 
 // ES6 Promise <-> Future
 class PromiseTransformer implements TypeTransformer {
