@@ -479,6 +479,7 @@ class Compiler {
         _handleFunction(output, child.value, _getParamsFromInfo(
                 child.value["type"],
                 analyzer.getFunctionParameters(child.key, child.value["name"])),
+            binding: "init.globalFunctions",
             prefix: "module.exports");
       }
 
