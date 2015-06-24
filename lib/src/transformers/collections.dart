@@ -39,7 +39,9 @@ class CollectionsTransformer implements TypeTransformer {
         arr.push(key); arr.push(dynamicTo(obj[key]));
           return arr;
         }, []);
-        return new P.LinkedHashMap_LinkedHashMap\$_literal(elms,P.String,null);
+        var map = new P.LinkedHashMap__makeLiteral(elms);
+        map.\$builtinTypeInfo = [P.String, null];
+        return map;
       }
     """);
 
@@ -103,7 +105,8 @@ class CollectionsTransformer implements TypeTransformer {
 
           output.write("var elms = Object.keys($name).reduce(function(arr, key) { arr.push(key); arr.push($name[key]); return arr; }, []);");
         }
-        output.write("$name = new P.LinkedHashMap_LinkedHashMap\$_literal(elms,$k,$v);");
+        output.write("$name = new P.LinkedHashMap__makeLiteral(elms);");
+        output.write("$name.\$builtinTypeInfo = [$k,$v];");
       } else if (tree[0] == "List") {
         output.write("$name = [].concat($name);$name.forEach(function(a, i) {");
         if(tree.length > 1)
