@@ -476,11 +476,11 @@ class Compiler {
       var type = child.value["kind"];
 
       if (type == "function") {
-        _handleFunction(output, child.value, _getParamsFromInfo(
-                child.value["type"],
-                analyzer.getFunctionParameters(child.key, child.value["name"])),
+        var params = _getParamsFromInfo(child.value["type"], analyzer.getFunctionParameters(child.key, child.value["name"]));
+        _handleFunction(output, child.value, params,
             binding: "init.globalFunctions",
-            prefix: "module.exports");
+            prefix: "module.exports",
+            codeStr: "init.globalFunctions.${child.value["name"]}().call\$${params.length}");
       }
 
       if (type == "class") {
