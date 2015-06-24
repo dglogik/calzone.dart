@@ -261,8 +261,7 @@ class Compiler {
           if (data["kind"] == "constructor" && isTopLevel) {
             var isDefault = name.length == 0;
             var buf = isDefault ? constructor : functions;
-            if (!isDefault) functions.write(
-                "module.exports.${classData["name"]}.$name = function() {");
+            if (!isDefault) functions.write("module.exports.${classData["name"]}.$name = function() {");
             buf.write("var __obj__ = (");
             var code = data["code"] == null || data["code"].length == 0
                 ? "function(){}"
@@ -276,20 +275,22 @@ class Compiler {
                 withSemicolon: false,
                 transform: FunctionTransformation.NONE);
             buf.write(").apply(this, arguments);");
-            if (!isDefault) functions.write(
-                "return module.exports.${classData["name"]}._(__obj__);};");
+            if (!isDefault)
+              functions.write("return module.exports.${classData["name"]}._(__obj__);};");
             continue;
           }
 
           if (data["kind"] == "constructor" && !isTopLevel) continue;
 
-          if (classObj != null && classObj.getters.contains(data["name"])) {
+          var params = _getParamsFromInfo(data["type"], analyzer.getFunctionParameters(library, data["name"], classData["name"]));
+
+          if (classObj != null && classObj.getters.contains(data["name"]) && params.length == 0) {
             if (!accessors.contains(name)) accessors.add(name);
             getters[name] = data;
             continue;
           }
 
-          if (classObj != null && classObj.setters.contains(data["name"])) {
+          if (classObj != null && classObj.setters.contains(data["name"]) && params.length == 1) {
             if (!accessors.contains(name)) accessors.add(name);
             setters[name] = data;
             continue;
@@ -306,16 +307,11 @@ class Compiler {
             }
 
             if (data["modifiers"]["static"] || data["modifiers"]["factory"]) {
-              if (isTopLevel) _handleFunction(functions, data,
-                  _getParamsFromInfo(data["type"], analyzer
-                      .getFunctionParameters(
-                          library, data["name"], classData["name"])),
+              if (isTopLevel) _handleFunction(functions, data, params,
                   prefix: "module.exports.${classData["name"]}",
                   codeStr: "init.allClasses.${mangledName != null ? mangledName : classData["name"]}.${data["code"].split(":")[0]}");
             } else {
-              _handleFunction(functions, data, _getParamsFromInfo(data["type"],
-                      analyzer.getFunctionParameters(
-                          library, name, classData["name"])),
+              _handleFunction(functions, data, params,
                   prefix: "module.exports.${classData["name"]}.prototype",
                   binding: "this.__obj__",
                   codeStr: "this.__obj__.${data["code"].split(":")[0]}");
@@ -323,7 +319,6 @@ class Compiler {
               StringBuffer buf = new StringBuffer();
               methods.add(buf);
 
-              var params = _getParamsFromInfo(data["type"]);
               var dartName = data["code"].split(":")[0];
 
               buf.write("if(proto.$name) { this.__obj__.$dartName = ");
@@ -498,7 +493,7 @@ class Compiler {
         _handleFunction(output, child.value, params,
             binding: "init.globalFunctions",
             prefix: "module.exports",
-            codeStr: "init.globalFunctions.${child.value["code"].split(":")[0].trim()}.${isMinified ? "call*" : "call\$" + params.length}");
+            codeStr: "init.globalFunctions.${child.value["code"].split(":")[0].trim()}.${isMinified ? "\$" + params.length : "call\$" + params.length}");
       }
 
       if (type == "class") {

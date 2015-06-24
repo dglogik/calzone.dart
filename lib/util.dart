@@ -48,8 +48,6 @@ abstract class NamedNode {
 }
 
 class Class implements NamedNode {
-  final Map<String, List<Parameter>> functions = {};
-
   final List<String> staticFields;
   final List<String> getters;
   final List<String> setters;
