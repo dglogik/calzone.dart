@@ -1,22 +1,5 @@
 part of calzone.transformers;
 
-final String _OBJ_EACH_PREFIX = """
-  function objEach(obj, cb, thisArg) {
-    if(typeof thisArg !== 'undefined') {
-      cb = cb.bind(thisArg);
-    }
-
-    var count = 0;
-    var keys = Object.keys(obj);
-    var length = keys.length;
-
-    for(; count < length; count++) {
-      var key = keys[count];
-      cb(obj[key], key, obj);
-    }
-  }
-""";
-
 final String _MAP_PREFIX = "var \$Map = require('es6-map');";
 
 // ES6-like Maps and Objects to Dart Maps, Arrays to Lists
@@ -46,8 +29,6 @@ class CollectionsTransformer implements TypeTransformer {
     """);
 
   dynamicTransformFrom(StringBuffer output, List<String> globals) {
-    if(!globals.contains(_OBJ_EACH_PREFIX))
-      globals.add(_OBJ_EACH_PREFIX);
     output.write("""
       if(Array.isArray(obj)) {
         return obj.map(function(e) {
@@ -94,7 +75,6 @@ class CollectionsTransformer implements TypeTransformer {
           output.write("});");
           output.write("var elms = keys.reduce(function(arr, key, index) { arr.push(key); arr.push(values[index]); return arr; }, []);");
         } else {
-          if (!globals.contains(_OBJ_EACH_PREFIX)) globals.add(_OBJ_EACH_PREFIX);
           output.write("objEach($name, function(a, i) {");
           if (tree.length > 2) {
             _handleTree(tree[2]);
@@ -136,8 +116,6 @@ class CollectionsTransformer implements TypeTransformer {
           output.write("this[i] = dynamicFrom(a);");
         output.write("}, $name);");
       } else if (tree[0] == "Map") {
-        if (!globals.contains(_OBJ_EACH_PREFIX)) globals.add(_OBJ_EACH_PREFIX);
-
         output.write("""
           if($name.constructor.name === '_JsonMap') {
             $name = $name._original;

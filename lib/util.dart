@@ -49,13 +49,17 @@ abstract class NamedNode {
 
 class Class implements NamedNode {
   final Map<String, List<Parameter>> functions = {};
+
   final List<String> staticFields;
+  final List<String> getters;
+  final List<String> setters;
+
   final List<String> inheritedFrom;
 
   final String name;
   final String libraryName;
 
-  Class(this.name, this.libraryName, [this.staticFields = const [], this.inheritedFrom = const []]);
+  Class(this.name, this.libraryName, {this.staticFields: const [], this.getters: const [], this.setters: const [], this.inheritedFrom: const []});
 }
 
 class Parameter implements NamedNode {

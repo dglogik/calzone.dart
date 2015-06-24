@@ -1,24 +1,40 @@
 part of calzone.compiler;
 
 class Compiler {
+  // instance of dartanalyzer visitor
   final Analyzer analyzer;
+
+  // *.info.json
   final Map<String, dynamic> _info;
 
+  // JSON that contains mangledNames if minified
+  final Map<String, dynamic> _mangledNames;
+
+  // list of TypeTransformers used within the Compiler instance
   final List<TypeTransformer> typeTransformers;
 
+  // the base (or god, it's kind of a god object) type transformer
   BaseTypeTransformer _base;
+
+  // a list of all classes in the *.info.json
   Map<String, Duo<Map, bool>> _classes = {};
+
+  // list of 'globals', prefixes to inject into the wrapper before the wrapper itself
   List<String> _globals = [];
 
-  Compiler(String dartFile, this._info, {this.typeTransformers: const []})
-      : analyzer = new Analyzer(dartFile) {
+  bool isMinified;
+
+  Compiler(String dartFile, this._info, {this.typeTransformers: const [], this.isMinified: true, Map<String, dynamic> mangledNames: const {
+      "libraries": const {}
+    }}) : analyzer = new Analyzer(dartFile), this._mangledNames = mangledNames {
     _base = new BaseTypeTransformer(this);
   }
 
-  Compiler.fromPath(String dartFile, String path,
-      {List<TypeTransformer> typeTransformers})
+  Compiler.fromPath(String dartFile, String path, {String mangledNames, List<TypeTransformer> typeTransformers, bool isMinified: false})
       : this(dartFile, JSON.decode(new File(path).readAsStringSync()),
-          typeTransformers: typeTransformers);
+          mangledNames: mangledNames == null ? null : JSON.decode(new File(mangledNames).readAsStringSync()),
+          typeTransformers: typeTransformers,
+          isMinified: isMinified);
 
   List<Parameter> _getParamsFromInfo(String typeStr,
       [List<Parameter> analyzerParams]) {
@@ -209,7 +225,9 @@ class Compiler {
     output.write("});");
   }
 
-  _handleClass(StringBuffer output, String library, Map data, String prefix) {
+  _handleClass(StringBuffer output, String library, Map data, [String mangledName]) {
+    String prefix = "module.exports";
+
     var classData = data;
     var name = data["name"];
     if (name.startsWith("_")) return;
@@ -252,8 +270,8 @@ class Compiler {
                     data["code"].substring(data["code"].indexOf(":") + 2) +
                     "[0])";
             var func = classData["name"];
-            _handleFunction(buf, data, _getParamsFromInfo(data["type"], analyzer
-                    .getFunctionParameters(library, func, classData["name"])),
+            _handleFunction(buf, data, _getParamsFromInfo(data["type"],
+                analyzer.getFunctionParameters(library, func, classData["name"])),
                 codeStr: code,
                 withSemicolon: false,
                 transform: FunctionTransformation.NONE);
@@ -265,15 +283,15 @@ class Compiler {
 
           if (data["kind"] == "constructor" && !isTopLevel) continue;
 
-          if (data["code"].startsWith("set\$")) {
+          if (classObj != null && classObj.getters.contains(data["name"])) {
             if (!accessors.contains(name)) accessors.add(name);
-            setters[name] = data;
+            getters[name] = data;
             continue;
           }
 
-          if (data["code"].startsWith("get\$")) {
+          if (classObj != null && classObj.setters.contains(data["name"])) {
             if (!accessors.contains(name)) accessors.add(name);
-            getters[name] = data;
+            setters[name] = data;
             continue;
           }
 
@@ -293,7 +311,7 @@ class Compiler {
                       .getFunctionParameters(
                           library, data["name"], classData["name"])),
                   prefix: "module.exports.${classData["name"]}",
-                  codeStr: "init.allClasses.${classData["name"]}.${data["code"].split(":")[0]}");
+                  codeStr: "init.allClasses.${mangledName != null ? mangledName : classData["name"]}.${data["code"].split(":")[0]}");
             } else {
               _handleFunction(functions, data, _getParamsFromInfo(data["type"],
                       analyzer.getFunctionParameters(
@@ -456,16 +474,16 @@ class Compiler {
       }
     }
 
-    output.write(
-        "function dynamicTo(obj) {if(typeof(obj) === 'undefined' || obj === null) { return obj; }");
+    output.write(_OBJ_EACH_PREFIX);
+
+    output.write("function dynamicTo(obj) {if(typeof(obj) === 'undefined' || obj === null) { return obj; }");
     _base.dynamicTransformTo(output, _globals);
     for (var transformer in typeTransformers) {
       transformer.dynamicTransformTo(output, _globals);
     }
     output.write("return obj;}");
 
-    output.write(
-        "function dynamicFrom(obj) {if(typeof(obj) === 'undefined' || obj === null) { return obj; }");
+    output.write("function dynamicFrom(obj) {if(typeof(obj) === 'undefined' || obj === null) { return obj; }");
     _base.dynamicTransformFrom(output, _globals);
     for (var transformer in typeTransformers) {
       transformer.dynamicTransformFrom(output, _globals);
@@ -480,11 +498,14 @@ class Compiler {
         _handleFunction(output, child.value, params,
             binding: "init.globalFunctions",
             prefix: "module.exports",
-            codeStr: "init.globalFunctions.${child.value["name"]}().call\$${params.length}");
+            codeStr: "init.globalFunctions.${child.value["code"].split(":")[0].trim()}.${isMinified ? "call*" : "call\$" + params.length}");
       }
 
       if (type == "class") {
-        _handleClass(output, child.key, child.value, "module.exports");
+        var mangledName;
+        if(_mangledNames["libraries"].containsKey(child.key) && _mangledNames["libraries"][child.key].containsKey(child.value["name"]))
+          mangledName = _mangledNames["libraries"][child.key][child.value["name"]];
+        _handleClass(output, child.key, child.value, mangledName);
       }
     }
 

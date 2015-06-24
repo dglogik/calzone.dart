@@ -1,0 +1,1 @@
+../sdk-dslink-javascript-new/temp/wrapper.js

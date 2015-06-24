@@ -3,7 +3,11 @@ part of calzone.analysis;
 VisitorBuilder _VISITOR = new VisitorBuilder()
   ..where(ClassDeclaration, (Analyzer analyzer, Duo duo, ClassDeclaration node) {
     Map data = duo.value;
+
     var staticFields = [];
+    var getters = [];
+    var setters = [];
+
     var tree = [];
 
     _handleClass(ClassDeclaration c) {
@@ -21,6 +25,14 @@ VisitorBuilder _VISITOR = new VisitorBuilder()
         staticFields.addAll(field.fields.variables.map((variable) => variable.name.toString()));
       }
 
+      var accessors = c.members.where((member) => member is MethodDeclaration && member.isGetter || member.isSetter);
+      for(var accessor in accessors) {
+        if(accessor.isGetter)
+          getters.add(accessor.name.toString());
+        if(accessor.isSetter)
+          setters.add(accessor.name.toString());
+      }
+
       if(tree.length > 0)
         analyzer.buildLibrary(duo.key, false);
 
@@ -36,7 +48,7 @@ VisitorBuilder _VISITOR = new VisitorBuilder()
 
     _handleClass(node);
 
-    data[node.name.toString()] = new Class(node.name.toString(), duo.key, staticFields, tree);
+    data[node.name.toString()] = new Class(node.name.toString(), duo.key, staticFields: staticFields, inheritedFrom: tree);
   })
   ..where(FormalParameterList, (Analyzer analyzer, Duo duo, FormalParameterList node) {
     Map data = duo.value;

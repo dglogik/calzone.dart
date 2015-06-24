@@ -8,7 +8,7 @@ packages
 .idea/
 
 # Misc files
-*.js
+./*.js
 *.json
 
 # Or the files created by dart2js.
