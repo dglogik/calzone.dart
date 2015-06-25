@@ -1,13 +1,13 @@
 library calzone.util;
 
+import "package:calzone/compiler.dart";
+export "package:calzone/compiler.dart" show Compiler, InfoData, MangledNames;
+
 abstract class TypeTransformer {
   List<String> get types;
 
-  void dynamicTransformTo(StringBuffer output, List<String> globals);
-  void dynamicTransformFrom(StringBuffer output, List<String> globals);
-
-  void transformToDart(StringBuffer output, TypeTransformer base, String name, List tree, List<String> globals);
-  void transformFromDart(StringBuffer output, TypeTransformer base, String name, List tree, List<String> globals);
+  void transformToDart(Compiler compiler, StringBuffer output);
+  void transformFromDart(Compiler compiler, StringBuffer output);
 }
 
 class Duo<K, V> {
