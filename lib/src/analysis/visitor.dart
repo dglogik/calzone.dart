@@ -12,14 +12,13 @@ class Visitor extends GeneralizingAstVisitor<dynamic> {
   @override
   visitNode(AstNode node) {
     bool shouldVisitChildren = true;
-    if(_visitors.containsKey(node.runtimeType)) {
+    if (_visitors.containsKey(node.runtimeType)) {
       _visitors[node.runtimeType].forEach((visitor) {
-        if(visitor(_analyzer, data, node)) shouldVisitChildren = false;
+        if (visitor(_analyzer, data, node)) shouldVisitChildren = false;
       });
     }
 
-    if(shouldVisitChildren)
-      node.visitChildren(this);
+    if (shouldVisitChildren) node.visitChildren(this);
   }
 }
 
@@ -27,20 +26,16 @@ class VisitorBuilder {
   final Map<Type, List<VisitorFunction>> _visitors = {};
 
   void where(types, VisitorFunction visitor) {
-    if(types is Iterable<Type>) {
-      for(var type in types) {
-        if(_visitors.containsKey(type))
-          _visitors[type].add(visitor);
-        else
-          _visitors[type] = [visitor];
+    if (types is Iterable<Type>) {
+      for (var type in types) {
+        if (_visitors.containsKey(type)) _visitors[type].add(visitor);
+        else _visitors[type] = [visitor];
       }
       return;
     }
 
-    if(_visitors.containsKey(types))
-      _visitors[types].add(visitor);
-    else
-      _visitors[types] = [visitor];
+    if (_visitors.containsKey(types)) _visitors[types].add(visitor);
+    else _visitors[types] = [visitor];
   }
 
   Visitor build(Analyzer analyzer, data) {

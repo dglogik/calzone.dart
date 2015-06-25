@@ -10,8 +10,7 @@ class CollectionsTransformer implements TypeTransformer {
 
   CollectionsTransformer([this._usePolyfill = false]);
 
-  dynamicTransformTo(StringBuffer output, List<String> globals) =>
-    output.write("""
+  dynamicTransformTo(StringBuffer output, List<String> globals) => output.write("""
       if(Array.isArray(obj)) {
         return obj.map(function(e) {
           return dynamicTo(e);
@@ -51,11 +50,9 @@ class CollectionsTransformer implements TypeTransformer {
   }
 
   @override
-  transformToDart(StringBuffer output, TypeTransformer base, String name,
-      List tree, List<String> globals) {
+  transformToDart(StringBuffer output, TypeTransformer base, String name, List tree, List<String> globals) {
     _handleTree(tree, [name = "this[i]"]) {
-      if (tree is String)
-        tree = [tree];
+      if (tree is String) tree = [tree];
 
       if (tree[0] == "Map") {
         var k = "P.String";
@@ -89,10 +86,8 @@ class CollectionsTransformer implements TypeTransformer {
         output.write("$name.\$builtinTypeInfo = [$k,$v];");
       } else if (tree[0] == "List") {
         output.write("$name = [].concat($name);$name.forEach(function(a, i) {");
-        if(tree.length > 1)
-          _handleTree(tree[1]);
-        else
-          output.write("a = dynamicTo(a);");
+        if (tree.length > 1) _handleTree(tree[1]);
+        else output.write("a = dynamicTo(a);");
         output.write("this[i] = a;}, $name);");
       }
     }
@@ -101,19 +96,14 @@ class CollectionsTransformer implements TypeTransformer {
   }
 
   @override
-  transformFromDart(StringBuffer output, TypeTransformer base, String name,
-      List tree, List<String> globals) {
-
+  transformFromDart(StringBuffer output, TypeTransformer base, String name, List tree, List<String> globals) {
     _handleTree(tree, [name = "this[i]"]) {
-      if (tree is String)
-        tree = [tree];
+      if (tree is String) tree = [tree];
 
       if (tree[0] == "List") {
         output.write("$name = [].concat($name);$name.forEach(function(a, i) {");
-        if(tree.length > 1)
-          _handleTree(tree[1]);
-        else
-          output.write("this[i] = dynamicFrom(a);");
+        if (tree.length > 1) _handleTree(tree[1]);
+        else output.write("this[i] = dynamicFrom(a);");
         output.write("}, $name);");
       } else if (tree[0] == "Map") {
         output.write("""
@@ -133,8 +123,7 @@ class CollectionsTransformer implements TypeTransformer {
 
         var isJsMap = _usePolyfill && tree.length > 2 && tree[1] != "String";
         if (isJsMap) {
-          if (!globals.contains(_MAP_PREFIX))
-            globals.add(_MAP_PREFIX);
+          if (!globals.contains(_MAP_PREFIX)) globals.add(_MAP_PREFIX);
           output.write("$name = new \$Map();");
           output.write("keys.forEach(function(key, i) {");
           _handleTree(tree[1], "keys[i]");
@@ -146,10 +135,9 @@ class CollectionsTransformer implements TypeTransformer {
             _handleTree(tree[2], "values");
           } else {
             output.write("values.forEach(function(key, i) { values[i] = dynamicFrom(key); });");
+          }
+          output.write("keys.forEach(function(key, index) { $name[key] = values[index]; });");
         }
-        output.write(
-            "keys.forEach(function(key, index) { $name[key] = values[index]; });");
-      }
         output.write("}");
       }
     }

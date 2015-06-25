@@ -32,11 +32,7 @@ RegExp _TREE_REGEX = new RegExp(r"([A-Za-z]+)(?:\<([\w\s,]+)\>)*");
 RegExp _COMMA_REGEX = new RegExp(r",(?!([^(<]+[)>]))");
 RegExp _SPACE_REGEX = new RegExp(r" (?!([^(<]+[)>]))");
 
-enum FunctionTransformation {
-  NORMAL,
-  REVERSED,
-  NONE
-}
+enum FunctionTransformation { NORMAL, REVERSED, NONE }
 
 List<dynamic> _getTypeTree(String type) {
   var tree = [];
@@ -46,8 +42,7 @@ List<dynamic> _getTypeTree(String type) {
   tree.add(match.group(1));
 
   if (match.group(2) != null && match.group(2).trim().length > 0 && match.group(2) != type) {
-    for (var group in match.group(2).split(r"[\,]{1}\s*"))
-      tree.addAll(_getTypeTree(group));
+    for (var group in match.group(2).split(r"[\,]{1}\s*")) tree.addAll(_getTypeTree(group));
   }
 
   return tree;
