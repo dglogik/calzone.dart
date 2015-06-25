@@ -29,7 +29,12 @@ init.libraries.forEach(function(elm) {
 
     if(Array.isArray(elm)) {
       elm.forEach(function(name) {
-        library.names[init.mangledGlobalNames[name]] = name;
+        if(typeof(init.allClasses[name]) !== 'undefined') {
+          library.names[init.mangledGlobalNames[name]] = {
+            name: name,
+            fields: init.allClasses[name]['$__fields__']
+          };
+        }
       });
     }
   });

@@ -199,7 +199,7 @@ class Compiler {
     }
   }
 
-  _handleClassField(StringBuffer output, Map data, [String prefix = "this"]) {
+  _handleClassField(StringBuffer output, Map data, [String prefix = "this", String mangledName]) {
     var name = data["name"];
     output.write("Object.defineProperty($prefix, \"$name\", {");
 
@@ -215,11 +215,11 @@ class Compiler {
       }
     } else {
       output.write("enumerable: ${(!name.startsWith("_"))}");
-      output.write(",get: function() { var returned = this.__obj__.$name;");
+      output.write(",get: function() { var returned = this.__obj__.${mangledName != null ? mangledName : name};");
       _base.transformFrom(output, "returned", data["type"]);
       output.write("return returned;},set: function(v) {");
       _base.transformTo(output, "v", data["type"]);
-      output.write("this.__obj__.$name = v;}");
+      output.write("this.__obj__.${mangledName != null ? mangledName : name} = v;}");
     }
 
     output.write("});");
@@ -239,6 +239,10 @@ class Compiler {
     StringBuffer fields = new StringBuffer();
 
     _handleClassChildren(Map memberData, {bool isTopLevel: true, Class classObj}) {
+      var mangledFields = [];
+      if(_mangledNames["libraries"].containsKey(classObj.libraryName) && _mangledNames["libraries"][classObj.libraryName].containsKey(memberData["name"]))
+        mangledFields.addAll(_mangledNames["libraries"][classObj.libraryName][memberData["name"]]["fields"]);
+
       List<String> accessors = [];
       Map<String, Map> getters = {};
       Map<String, Map> setters = {};
@@ -338,11 +342,11 @@ class Compiler {
           names.add(data["name"]);
 
           if (!data["name"].startsWith("_")) {
-            if (classObj == null ||
-                !classObj.staticFields.contains(data["name"])) {
+            if (classObj == null || !classObj.staticFields.contains(data["name"])) {
               _handleClassField(fields, data);
             } else {
-              _handleClassField(functions, data, "module.exports.$name");
+              var mangledName = mangledFields.length > 0 ? mangledFields.removeAt(0) : null;
+              _handleClassField(functions, data, "module.exports.$name", mangledName);
             }
           }
         }
@@ -499,7 +503,7 @@ class Compiler {
       if (type == "class") {
         var mangledName;
         if(_mangledNames["libraries"].containsKey(child.key) && _mangledNames["libraries"][child.key].containsKey(child.value["name"]))
-          mangledName = _mangledNames["libraries"][child.key][child.value["name"]];
+          mangledName = _mangledNames["libraries"][child.key][child.value["name"]]["name"];
         _handleClass(output, child.key, child.value, mangledName);
       }
     }
