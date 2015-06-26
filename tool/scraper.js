@@ -17,22 +17,37 @@ var map = {
   libraries: {}
 };
 
+var alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
 init.libraries.forEach(function(elm) {
   var library = {
     names: {}
   };
 
+  var length = elm.length;
   elm.forEach(function(elm, index) {
     if(index == 0) {
       library.name = elm;
     }
 
+    if(index === length - 1) {
+      var alphadex = 25;
+      while(--alphadex >= 0) {
+        if(eval(alphabet[alphadex]) === elm)
+          library.obj = alphabet[alphadex];
+      }
+    }
+
     if(Array.isArray(elm)) {
       elm.forEach(function(name) {
-        if(typeof(init.allClasses[name]) !== 'undefined') {
+        if(init.allClasses[name] && init.mangledGlobalNames[name]) {
           library.names[init.mangledGlobalNames[name]] = {
             name: name,
             fields: init.allClasses[name]['$__fields__']
+          };
+        } else if(init.mangledGlobalNames[name] && init.mangledGlobalNames[name].indexOf('new ') === 0) {
+          library.names[init.mangledGlobalNames[name].split(':')[0]] = {
+            name: name
           };
         }
       });
