@@ -105,23 +105,21 @@ class MangledNames extends _JSONWrapper {
   MangledNames(Map data) : super(data);
 
   String getClassName(String library, String className) {
-    if (data["libraries"].containsKey(library) &&
-        data["libraries"][library].containsKey(className)) return data[
-        "libraries"][library][className]["name"];
-    return null;
+    if (!data["libraries"].containsKey(library) || !data["libraries"][library]["names"].containsKey(className))
+      throw className;
+    return data["libraries"][library]["names"][className]["name"];
   }
 
   List<String> getClassFields(String library, String className) {
-    if (data["libraries"].containsKey(library) &&
-        data["libraries"][library].containsKey(className)) return data[
-        "libraries"][library][className]["fields"];
-    return null;
+    if (!data["libraries"].containsKey(library) || !data["libraries"][library]["names"].containsKey(className))
+      throw className;
+    return data["libraries"][library]["names"][className]["fields"];
   }
 
   String getLibraryObject(String library) {
-    if (data["libraries"].containsKey(library)) return data["libraries"][
-        library]["obj"];
-    return null;
+    if (!data["libraries"].containsKey(library))
+      throw library;
+    return data["libraries"][library]["obj"];
   }
 }
 
@@ -159,6 +157,16 @@ class InfoParent extends _JSONWrapper {
     if(children[child] == null)
       throw children.keys;
     return children[child]["code"].split(":")[0].trim();
+  }
+
+  String renderConditional(String name) {
+    var conditionals = [];
+    for(var childName in children.keys) {
+      if(children[childName]["kind"] == "method" && children[childName]["code"] != null) {
+        conditionals.add("$name.${getMangledName(childName)}");
+      }
+    }
+    return conditionals.join(" && ");
   }
 }
 

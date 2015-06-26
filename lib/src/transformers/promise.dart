@@ -38,7 +38,7 @@ class PromiseTransformer implements TypeTransformer {
     var data = compiler.classes["dart.async._Future"];
 
     output.write("""
-      if(obj.constructor.name === "_Future") {
+      if(${data.key.renderConditional("obj")}) {
         var promise = new $promiseName(function(then, error) {
           obj.${data.key.getMangledName("then")}({
             ${compiler.isMinified ? "\$1" : "call\$1"}:function(val) {

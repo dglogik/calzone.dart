@@ -44,11 +44,11 @@ class CollectionsTransformer implements TypeTransformer {
       }
       var keys;
       var values;
-      if(obj.constructor.name === '_JsonMap') {
+      if(${jsonData.key.renderConditional("obj")}) {
         keys = obj.${jsonData.key.getMangledName("keys")}();
         values = obj.${jsonData.key.getMangledName("values")}();
       }
-      if(obj.constructor.name === 'JsLinkedHashMap') {
+      if(${linkedData.key.renderConditional("obj")}) {
         keys = obj.${linkedData.key.getMangledName("keys")}();
         values = obj.${linkedData.key.getMangledName("values")}();
       }
