@@ -12,7 +12,6 @@ class CollectionsTransformer implements TypeTransformer {
 
   transformToDart(Compiler compiler, StringBuffer output) {
     var mangledNames = compiler.mangledNames;
-    var data = compiler.classes["dart.collection.LinkedHashMap"];
     var constructor = mangledNames.getClassName("dart.collection", "new LinkedHashMap\$fromIterable");
 
     output.write("""
@@ -27,31 +26,39 @@ class CollectionsTransformer implements TypeTransformer {
           return arr;
         }, []);
         var map = new ${mangledNames.getLibraryObject("dart.collection")}.$constructor(elms);
-        map.\$builtinTypeInfo = [P.String, null];
+        map.\$builtinTypeInfo = [${compiler.mangledNames.getLibraryObject("dart.core")}.${compiler.mangledNames.getClassName("dart.core", "String")}, null];
         return map;
       }
     """);
   }
 
   transformFromDart(Compiler compiler, StringBuffer output) {
+    var jsonData = compiler.classes["dart.convert._JsonMap"];
+    var linkedData = compiler.classes["_js_helper.JsLinkedHashMap"];
+
     output.write("""
       if(Array.isArray(obj)) {
         return obj.map(function(e) {
           return dynamicFrom(e);
         });
       }
+      var keys;
+      var values;
       if(obj.constructor.name === '_JsonMap') {
-        var a = obj._original;
-        Object.keys(a).forEach(function(key) { a[key] = dynamicFrom(a[key]); });
-        return a;
+        keys = obj.${jsonData.key.getMangledName("keys")}();
+        values = obj.${jsonData.key.getMangledName("values")}();
       }
       if(obj.constructor.name === 'JsLinkedHashMap') {
-        var a = {};
-        objEach(obj._strings, function(cell) {
-          a[cell.hashMapCellKey] = dynamicFrom(cell.hashMapCellValue);
-        });
-        return a;
+        keys = obj.${linkedData.key.getMangledName("keys")}();
+        values = obj.${linkedData.key.getMangledName("values")}();
       }
+
+      var a = {};
+      keys.forEach(function(key, index) {
+        a[key] = dynamicFrom(values[index]);
+      });
+
+      return a;
     """);
   }
 }

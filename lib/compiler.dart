@@ -42,7 +42,16 @@ abstract class Renderable {
   void render(Compiler compiler, StringBuffer output);
 }
 
-const List<String> PRIMITIVES = const ["String", "Number", "num", "double", "int", "Integer", "bool", "Boolean"];
+const List<String> PRIMITIVES = const [
+  "String",
+  "Number",
+  "num",
+  "double",
+  "int",
+  "Integer",
+  "bool",
+  "Boolean"
+];
 
 final String _OBJ_EACH_PREFIX = """
   function objEach(obj, cb, thisArg) {
@@ -93,29 +102,31 @@ class _JSONWrapper {
 }
 
 class MangledNames extends _JSONWrapper {
-  MangledNames(Map data): super(data);
+  MangledNames(Map data) : super(data);
 
   String getClassName(String library, String className) {
-    if(data["libraries"].containsKey(library) && data["libraries"][library].containsKey(className))
-      return data["libraries"][library][className]["name"];
+    if (data["libraries"].containsKey(library) &&
+        data["libraries"][library].containsKey(className)) return data[
+        "libraries"][library][className]["name"];
     return null;
   }
 
   List<String> getClassFields(String library, String className) {
-    if(data["libraries"].containsKey(library) && data["libraries"][library].containsKey(className))
-      return data["libraries"][library][className]["fields"];
+    if (data["libraries"].containsKey(library) &&
+        data["libraries"][library].containsKey(className)) return data[
+        "libraries"][library][className]["fields"];
     return null;
   }
 
   String getLibraryObject(String library) {
-    if(data["libraries"].containsKey(library))
-      return data["libraries"][library]["obj"];
+    if (data["libraries"].containsKey(library)) return data["libraries"][
+        library]["obj"];
     return null;
   }
 }
 
 class InfoData extends _JSONWrapper {
-  InfoData(Map data): super(data);
+  InfoData(Map data) : super(data);
 
   Map<String, dynamic> getElement(String type, String id) {
     return data["elements"][type][id.toString()];
@@ -128,9 +139,9 @@ class InfoData extends _JSONWrapper {
 
 class InfoParent extends _JSONWrapper {
   InfoData parent;
-  Map<String, Map> children;
+  Map<String, Map> children = {};
 
-  InfoParent(this.parent, Map data): super(data) {
+  InfoParent(this.parent, Map data) : super(data) {
     for (var child in data["children"]) {
       child = child.split("/");
 
@@ -138,11 +149,15 @@ class InfoParent extends _JSONWrapper {
       var id = child[1];
 
       var childData = parent.getElement(type, id);
-      children[childData["name"].length > 0 ? childData["name"] : data["name"]] = childData;
+      children[childData["name"].length > 0
+          ? childData["name"]
+          : data["name"]] = childData;
     }
   }
 
   String getMangledName(String child) {
+    if(children[child] == null)
+      throw children.keys;
     return children[child]["code"].split(":")[0].trim();
   }
 }
@@ -164,8 +179,11 @@ List<dynamic> _getTypeTree(String type) {
   if (match == null) return tree;
   tree.add(match.group(1));
 
-  if (match.group(2) != null && match.group(2).trim().length > 0 && match.group(2) != type) {
-    for (var group in match.group(2).split(r"[\,]{1}\s*")) tree.addAll(_getTypeTree(group));
+  if (match.group(2) != null &&
+      match.group(2).trim().length > 0 &&
+      match.group(2) != type) {
+    for (var group in match.group(2).split(r"[\,]{1}\s*")) tree
+        .addAll(_getTypeTree(group));
   }
 
   return tree;
