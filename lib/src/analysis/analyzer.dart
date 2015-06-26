@@ -22,10 +22,11 @@ VisitorBuilder _VISITOR = new VisitorBuilder()
         staticFields.addAll(field.fields.variables.map((variable) => variable.name.toString()));
       }
 
-      var accessors = c.members.where((member) => member is MethodDeclaration && member.isGetter || member.isSetter);
-      for (var accessor in accessors) {
-        if (accessor.isGetter) getters.add(accessor.name.toString());
-        if (accessor.isSetter) setters.add(accessor.name.toString());
+      for (var member in c.members) {
+        if(member is MethodDeclaration) {
+          if (member.isGetter) getters.add(member.name.toString());
+          if (member.isSetter) setters.add(member.name.toString());
+        }
       }
 
       if (tree.length > 0) analyzer.buildLibrary(duo.key, false);

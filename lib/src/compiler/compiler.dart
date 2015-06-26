@@ -17,10 +17,10 @@ class Compiler {
   BaseTypeTransformer baseTransformer;
 
   // a list of all classes in the *.info.json
-  Map<String, Duo<Map, bool>> _classes = {};
+  Map<String, Duo<InfoParent, bool>> classes = {};
 
   // list of 'globals', prefixes to inject into the wrapper before the wrapper itself
-  List<String> _globals = [];
+  List<String> globals = [];
 
   bool isMinified;
 
@@ -47,7 +47,7 @@ class Compiler {
         var isIncluded = include.contains(library["name"] + "." + childData["name"]) || include.contains(library["name"]);
 
         if (type == "class") {
-          _classes[isIncluded ? childData["name"] : library["name"] + "." + childData["name"]] = new Duo(childData, isIncluded);
+          classes[isIncluded ? childData["name"] : library["name"] + "." + childData["name"]] = new Duo(new InfoParent(info, childData), isIncluded);
           if(isIncluded) {
             var c = analyzer.getClass(library["name"], childData["name"]);
             c.data = childData;
@@ -59,30 +59,31 @@ class Compiler {
           var params = _getParamsFromInfo(this, childData["type"], analyzer.getFunctionParameters(library["name"], childData["name"]));
           children.add(new Func(childData, params,
               binding: "init.globalFunctions",
-              prefix: "module.exports",
-              code: "init.globalFunctions.${child.value["code"].split(":")[0].trim()}.${isMinified ? "\$" + params.length : "call\$" + params.length}"));
+              prefix: "mdex",
+              code: "init.globalFunctions.${childData["code"].split(":")[0].trim()}.${isMinified ? "\$" + params.length.toString() : "call\$" + params.length.toString()}"));
         }
       }
     }
 
     output.write(_OBJ_EACH_PREFIX);
+    output.write(_OVERRIDE_PREFIX);
 
     output.write("function dynamicTo(obj) {if(typeof(obj) === 'undefined' || obj === null) { return obj; }");
-    baseTransformer.dynamicTransformTo(output, _globals);
+    baseTransformer.transformToDart(this, output);
     for (var transformer in typeTransformers) {
-      transformer.dynamicTransformTo(output, _globals);
+      transformer.transformToDart(this, output);
     }
     output.write("return obj;}");
 
     output.write("function dynamicFrom(obj) {if(typeof(obj) === 'undefined' || obj === null) { return obj; }");
-    baseTransformer.dynamicTransformFrom(output, _globals);
+    baseTransformer.transformFromDart(this, output);
     for (var transformer in typeTransformers) {
-      transformer.dynamicTransformFrom(output, _globals);
+      transformer.transformFromDart(this, output);
     }
     output.write("return obj;}");
 
     children.forEach((c) => c.render(this, output));
 
-    return _globals.join() + output.toString();
+    return globals.join() + output.toString();
   }
 }

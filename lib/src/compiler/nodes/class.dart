@@ -1,6 +1,7 @@
 part of calzone.compiler;
 
 class Class implements Renderable {
+  final Map<String, List<Parameter>> functions = {};
   Map<String, dynamic> data;
 
   final List<String> staticFields;
@@ -15,7 +16,7 @@ class Class implements Renderable {
   Class(this.name, this.libraryName, {this.staticFields: const [], this.getters: const [], this.setters: const [], this.inheritedFrom: const []});
 
   render(Compiler compiler, StringBuffer output) {
-    String prefix = "module.exports";
+    String prefix = "mdex";
 
     if (name.startsWith("_")) return;
 
@@ -27,7 +28,9 @@ class Class implements Renderable {
     StringBuffer fields = new StringBuffer();
 
     _handleClassChildren(Class c, Map memberData, {bool isTopLevel: true}) {
-      var mangledFields = []..addAll(compiler.mangledNames.getClassFields(this.libraryName, this.name));
+      var mangledFields = compiler.mangledNames.getClassFields(this.libraryName, this.name);
+      if(mangledFields == null)
+        mangledFields = [];
 
       List<String> accessors = [];
       Map<String, Map> getters = {};
@@ -51,18 +54,18 @@ class Class implements Renderable {
           if (data["kind"] == "constructor" && isTopLevel) {
             var isDefault = name.length == 0;
             var buf = isDefault ? constructor : functions;
-            if (!isDefault) functions.write("module.exports.${this.data["name"]}.$name = function() {");
+            if (!isDefault) functions.write("mdex.${this.data["name"]}.$name = function() {");
             buf.write("var __obj__ = (");
             var code = data["code"] == null || data["code"].length == 0
                 ? "function(){}"
-                : "(" + data["code"].substring(data["code"].indexOf(":") + 2) + "[0])";
+                : "(" + data["code"].split(":").sublist(1).join(":").trim() + "[0])";
             var func = this.data["name"];
             (new Func(data, _getParamsFromInfo(compiler, data["type"], compiler.analyzer.getFunctionParameters(this.libraryName, func, this.data["name"])),
                 code: code,
                 withSemicolon: false,
                 transform: FunctionTransformation.NONE)).render(compiler, buf);
             buf.write(").apply(this, arguments);");
-            if (!isDefault) functions.write("return module.exports.${this.data["name"]}._(__obj__);};");
+            if (!isDefault) functions.write("return mdex.${this.data["name"]}._(__obj__);};");
             continue;
           }
 
@@ -94,11 +97,11 @@ class Class implements Renderable {
             if (data["modifiers"]["static"] || data["modifiers"]["factory"]) {
               if (isTopLevel)
                 (new Func(data, params,
-                    code: "init.allClasses.${mangledName != null ? mangledName : this.data["name"]}.${data["code"].split(":")[0]}",
-                    prefix: "module.exports.${this.data["name"]}")).render(compiler, functions);
+                    code: "init.allClasses.${data["code"].split(":")[0]}",
+                    prefix: "mdex.${this.data["name"]}")).render(compiler, functions);
             } else {
               (new Func(data, params,
-                  prefix: "module.exports.${this.data["name"]}.prototype",
+                  prefix: "mdex.${this.data["name"]}.prototype",
                   binding: "this.__obj__",
                   code: "this.__obj__.${data["code"].split(":")[0]}")).render(compiler, functions);
 
@@ -107,12 +110,7 @@ class Class implements Renderable {
 
               var dartName = data["code"].split(":")[0];
 
-              buf.write("if(proto.$name) { this.__obj__.$dartName = ");
-              (new Func(data, params,
-                  code: "this.$name",
-                  withSemicolon: false,
-                  transform: FunctionTransformation.REVERSED)).render(compiler, buf);
-              buf.write(".bind(this);}");
+              buf.write("if(proto.$name) { overrideFunc(this, $name, $dartName); }");
             }
           }
         }
@@ -136,7 +134,7 @@ class Class implements Renderable {
       }
 
       for (var accessor in accessors) {
-        fields.write("Object.defineProperty(this, \"$accessor\", {");
+        fields.write("obdp(this, \"$accessor\", {");
 
         fields.write("enumerable: true");
         if (getters[accessor] != null) {
@@ -174,13 +172,17 @@ class Class implements Renderable {
         var classObj = compiler.analyzer.getClass(null, superClass);
         if (classObj != null)
           _handleClassChildren(classObj,
-              compiler._classes[superClass] != null ?
-                  compiler._classes[superClass].key :
-                  compiler._classes[classObj.libraryName + "." + superClass].key,
+              compiler.classes[superClass] != null ?
+                  compiler.classes[superClass].key.data :
+                  compiler.classes[classObj.libraryName + "." + superClass].key.data,
               isTopLevel: false);
       });
 
-    output.write("module.exports.$name = function $name() {");
+    output.write("function ${name}Fields() {");
+    output.write(fields.toString());
+    output.write("}");
+
+    output.write("mdex.$name = function $name() {");
     output.write(constructor.toString());
 
     (new ClassProperty({
@@ -191,14 +193,14 @@ class Class implements Renderable {
       "name": "__obj__"
     }, this, value: "__obj__")).render(compiler, output);
 
-    output.write(fields.toString());
+    output.write("${name}Fields.call(this);");
     output.write("};");
 
     output.write("""
-    Object.defineProperty(module.exports.$name, 'class', {
+    obdp(mdex.$name, 'class', {
       get: function() {
         function $name() {
-          module.exports.$name.apply(this, arguments);
+          mdex.$name.apply(this, arguments);
           var proto = Object.getPrototypeOf(this);
     """);
 
@@ -207,7 +209,7 @@ class Class implements Renderable {
     output.write("""
         }
 
-        $name.prototype = Object.create(module.exports.$name.prototype);
+        $name.prototype = Object.create(mdex.$name.prototype);
 
         return $name;
       }
@@ -228,7 +230,7 @@ class Class implements Renderable {
         "name": "__obj__"
       }, this, value: "__obj__")).render(compiler, output);
 
-      output.write(fields.toString());
+      output.write("${name}Fields.call(this);");
 
       output.write("}.bind(returned))();");
       output.write("return returned;}");

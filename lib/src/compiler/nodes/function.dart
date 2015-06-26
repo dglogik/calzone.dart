@@ -12,7 +12,7 @@ class Func implements Renderable {
 
   final bool _withSemicolon;
 
-  Func(this.data, this.parameters, {this.transform: FunctionTransformation.NORMAL, String code, String binding, String prefix, bool withSemicolon}):
+  Func(this.data, this.parameters, {this.transform: FunctionTransformation.NORMAL, String code, String binding, String prefix, bool withSemicolon: true}):
     _code = code,
     _binding = binding,
     _prefix = prefix,

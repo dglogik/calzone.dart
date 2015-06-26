@@ -10,22 +10,22 @@ class ClassProperty implements Renderable {
   final String mangledName;
 
   ClassProperty(this.data, this._class, {bool isStatic: false, this.value, this.mangledName}) {
-    _prefix = isStatic ? "module.exports.${_class.name}" : "this";
+    _prefix = isStatic ? "mdex.${_class.name}" : "this";
   }
 
   render(Compiler compiler, StringBuffer output) {
     var name = data["name"];
-    output.write("Object.defineProperty($_prefix, \"$name\", {");
+    output.write("obdp($_prefix, \"$name\", {");
 
-    if (data["value"] != null) {
-      if (data["value"] is Function) {
+    if (value != null) {
+      if (value is Function) {
         output.write("enumerable: false");
         output.write(",value:(");
-        data["value"]();
+        value();
         output.write(")");
       } else {
         output.write("enumerable: false");
-        output.write(",value: ${data["value"]}");
+        output.write(",value: $value");
       }
     } else {
       output.write("enumerable: ${(!name.startsWith("_"))}");

@@ -10,23 +10,28 @@ class PromiseTransformer implements TypeTransformer {
 
   PromiseTransformer([this._usePolyfill = false]);
 
-  dynamicTransformTo(StringBuffer output, List<String> globals) => output.write("""
+  transformToDart(Compiler compiler, StringBuffer output) {
+    var mangledNames = compiler.mangledNames;
+    var data = compiler.classes["dart.async.Completer"];
+
+    output.write("""
       if((typeof(obj) === 'object' || typeof(obj) === 'function') && typeof(obj.then) === 'function' && typeof(obj.catch) === 'function') {
-        var completer = new P._SyncCompleter(new P._Future(0, \$.Zone__current, null));
+        var completer = new ${mangledNames.getLibraryObject("dart.async")}.${mangledNames.getClassName("dart.async", "new Completer\$sync")}();
         obj.then(function(then) {
-          completer.complete\$1(null, dynamicTo(then));
+          completer.${data.key.getMangledName("complete")}(null, dynamicTo(then));
         }).catch(function(err) {
-          completer.completeError\$1(err);
+          completer.${data.key.getMangledName("completeError")}(err);
         });
         return completer.future;
       }
     """);
+  }
 
-  dynamicTransformFrom(StringBuffer output, List<String> globals) {
-    var promiseName = "Promise";
+  transformFromDart(Compiler compiler, StringBuffer output) {
+    var promiseName = _usePolyfill ? "\$Promise" : "Promise";
     if (_usePolyfill) {
-      if (!globals.contains(_PROMISE_PREFIX)) globals.add(_PROMISE_PREFIX);
-      promiseName = "\$Promise";
+      if (!compiler.globals.contains(_PROMISE_PREFIX))
+        compiler.globals.add(_PROMISE_PREFIX);
     }
 
     output.write("""
@@ -45,27 +50,5 @@ class PromiseTransformer implements TypeTransformer {
         return promise;
       }
     """);
-  }
-
-  @override
-  transformToDart(StringBuffer output, TypeTransformer base, String name, List tree, List<String> globals) {
-    output.write("var completer = new P._SyncCompleter(new P._Future(0, \$.Zone__current, null));");
-    output.write("$name.then(function(then) {");
-    if (tree.length > 1) base.transformToDart(output, base, "then", tree[1], globals);
-    output.write("completer.complete\$1(null, then);}).catch(function(err) {completer.completeError\$1(err);});");
-    output.write("$name = completer.future;");
-  }
-
-  @override
-  transformFromDart(StringBuffer output, TypeTransformer base, String name, List tree, List<String> globals) {
-    if (_usePolyfill && !globals.contains(_PROMISE_PREFIX)) globals.add(_PROMISE_PREFIX);
-
-    output
-        .write("var promise = new ${_usePolyfill ? "\$Promise" : "Promise"}(function(then, error) {$name.then\$2\$onError({call\$1:function(val) {");
-    if (tree.length > 1) {
-      base.transformFromDart(output, base, "val", tree[1], globals);
-    } else output.write("val = dynamicFrom(val);");
-    output.write("then(val); }}, {call\$1: function(err) {error(err);}});});");
-    output.write("$name = promise;");
   }
 }

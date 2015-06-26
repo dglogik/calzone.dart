@@ -61,6 +61,24 @@ final String _OBJ_EACH_PREFIX = """
   }
 """;
 
+final String _OVERRIDE_PREFIX = """
+  var mdex = module.exports;
+  var obdp = Object.defineProperty;
+  function overrideFunc(cl, name, mangledName) {
+    cl.__obj__[mangledName] = function() {
+      var args = Array.prototype.slice.call(arguments);
+      var length = args.length;
+      var index = 0;
+
+      for(; index < length; index++) {
+        args[index] = dynamicFrom(args[index]);
+      }
+
+      return dynamicTo((this[name]).apply(this, args));
+    }.bind(cl);
+  }
+""";
+
 RegExp _TYPE_REGEX = new RegExp(r"\(([^]*)\) -> ([^]+)");
 RegExp _TREE_REGEX = new RegExp(r"([A-Za-z]+)(?:\<([\w\s,]+)\>)*");
 RegExp _COMMA_REGEX = new RegExp(r",(?!([^(<]+[)>]))");
@@ -69,23 +87,29 @@ RegExp _SPACE_REGEX = new RegExp(r" (?!([^(<]+[)>]))");
 enum FunctionTransformation { NORMAL, REVERSED, NONE }
 
 class _JSONWrapper {
-  final Map<String, dynamic> _data;
+  final Map<String, dynamic> data;
 
-  _JSONWrapper(this._data);
+  _JSONWrapper(this.data);
 }
 
 class MangledNames extends _JSONWrapper {
   MangledNames(Map data): super(data);
 
   String getClassName(String library, String className) {
-    if(_data["libraries"].containsKey(library) && _data["libraries"][library].containsKey(className))
-      return _data["libraries"][library][className]["name"];
+    if(data["libraries"].containsKey(library) && data["libraries"][library].containsKey(className))
+      return data["libraries"][library][className]["name"];
     return null;
   }
 
   List<String> getClassFields(String library, String className) {
-    if(_data["libraries"].containsKey(library) && _data["libraries"][library].containsKey(className))
-      return _data["libraries"][library][className]["fields"];
+    if(data["libraries"].containsKey(library) && data["libraries"][library].containsKey(className))
+      return data["libraries"][library][className]["fields"];
+    return null;
+  }
+
+  String getLibraryObject(String library) {
+    if(data["libraries"].containsKey(library))
+      return data["libraries"][library]["obj"];
     return null;
   }
 }
@@ -94,11 +118,32 @@ class InfoData extends _JSONWrapper {
   InfoData(Map data): super(data);
 
   Map<String, dynamic> getElement(String type, String id) {
-    return _data["elements"][type][id.toString()];
+    return data["elements"][type][id.toString()];
   }
 
   List<Map<String, dynamic>> getLibraries() {
-    return _data["elements"]["libraries"].values;
+    return data["elements"]["library"].values;
+  }
+}
+
+class InfoParent extends _JSONWrapper {
+  InfoData parent;
+  Map<String, Map> children;
+
+  InfoParent(this.parent, Map data): super(data) {
+    for (var child in data["children"]) {
+      child = child.split("/");
+
+      var type = child[0];
+      var id = child[1];
+
+      var childData = parent.getElement(type, id);
+      children[childData["name"].length > 0 ? childData["name"] : data["name"]] = childData;
+    }
+  }
+
+  String getMangledName(String child) {
+    return children[child]["code"].split(":")[0].trim();
   }
 }
 
@@ -166,7 +211,7 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, String typeStr, [List<Para
           .where((e) => e.length > 0)
           .map((e) => e.contains(" ")
                   ? e.split(" ")[0]
-                  : (compiler._classes.containsKey(_getTypeTree(e)[0]) || compiler._classes.keys.any((key) => key.endsWith("." + _getTypeTree(e)[0])))
+                  : (compiler.classes.containsKey(_getTypeTree(e)[0]) || compiler.classes.keys.any((key) => key.endsWith("." + _getTypeTree(e)[0])))
               ? e : "dynamic")
           .toList();
 
@@ -188,7 +233,7 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, String typeStr, [List<Para
       actualName = split[1];
     } else {
       var c = _getTypeTree(split[0])[0];
-      if (c != "Function" && !compiler._classes.containsKey(c) && !compiler._classes.keys.any((key) => key.contains(".$c"))) {
+      if (c != "Function" && !compiler.classes.containsKey(c) && !compiler.classes.keys.any((key) => key.contains(".$c"))) {
         piece = "dynamic";
         actualName = c;
       } else {
