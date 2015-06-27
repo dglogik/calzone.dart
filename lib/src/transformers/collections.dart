@@ -33,8 +33,7 @@ class CollectionsTransformer implements TypeTransformer {
   }
 
   transformFromDart(Compiler compiler, StringBuffer output) {
-    var jsonData = compiler.classes["dart.convert._JsonMap"];
-    var linkedData = compiler.classes["_js_helper.JsLinkedHashMap"];
+    var data = compiler.classes["_js_helper.JsLinkedHashMap"];
 
     output.write("""
       if(Array.isArray(obj)) {
@@ -42,23 +41,18 @@ class CollectionsTransformer implements TypeTransformer {
           return dynamicFrom(e);
         });
       }
-      var keys;
-      var values;
-      if(${jsonData.key.renderConditional("obj")}) {
-        keys = obj.${jsonData.key.getMangledName("keys")}();
-        values = obj.${jsonData.key.getMangledName("values")}();
-      }
-      if(${linkedData.key.renderConditional("obj")}) {
-        keys = obj.${linkedData.key.getMangledName("keys")}();
-        values = obj.${linkedData.key.getMangledName("values")}();
-      }
 
-      var a = {};
-      keys.forEach(function(key, index) {
-        a[key] = dynamicFrom(values[index]);
-      });
+      if(obj.${data.key.getMangledName("keys")} && obj.${data.key.getMangledName("values")}) {
+        var keys = obj.${data.key.getMangledName("keys")}();
+        var values = obj.${data.key.getMangledName("values")}();
 
-      return a;
+        var a = {};
+        keys.forEach(function(key, index) {
+          a[key] = dynamicFrom(values[index]);
+        });
+
+        return a;
+      }
     """);
   }
 }
