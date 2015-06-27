@@ -60,7 +60,7 @@ class Compiler {
           children.add(new Func(childData, params,
               binding: "init.globalFunctions",
               prefix: "mdex",
-              code: "init.globalFunctions.${childData["code"].split(":")[0].trim()}.${isMinified ? "\$" + params.length.toString() : "call\$" + params.length.toString()}"));
+              code: "init.globalFunctions.${childData["code"].split(":")[0].trim()}().${isMinified ? "\$" + params.length.toString() : "call\$" + params.length.toString()}"));
         }
       }
     }

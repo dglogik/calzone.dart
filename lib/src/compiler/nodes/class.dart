@@ -58,7 +58,7 @@ class Class implements Renderable {
             buf.write("var __obj__ = (");
             var code = data["code"] == null || data["code"].length == 0
                 ? "function(){}"
-                : "(" + data["code"].split(":").sublist(1).join(":").trim() + "[0])";
+                : "${compiler.mangledNames.getLibraryObject(libraryName)}.${data["code"].split(":")[0].trim()}";
             var func = this.data["name"];
             (new Func(data, _getParamsFromInfo(compiler, data["type"], compiler.analyzer.getFunctionParameters(this.libraryName, func, this.data["name"])),
                 code: code,

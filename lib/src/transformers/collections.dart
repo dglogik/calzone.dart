@@ -12,7 +12,7 @@ class CollectionsTransformer implements TypeTransformer {
 
   transformToDart(Compiler compiler, StringBuffer output) {
     var mangledNames = compiler.mangledNames;
-    var constructor = mangledNames.getClassName("dart.collection", "new LinkedHashMap\$fromIterable");
+    var constructor = mangledNames.getClassName("dart.collection", "new LinkedHashMap\$fromIterables");
 
     output.write("""
       if(Array.isArray(obj)) {
@@ -21,11 +21,13 @@ class CollectionsTransformer implements TypeTransformer {
         });
       }
       if(obj.constructor.name === 'Object') {
-        var elms = Object.keys(obj).reduce(function(arr, key) {
-        arr.push(key); arr.push(dynamicTo(obj[key]));
-          return arr;
-        }, []);
-        var map = new ${mangledNames.getLibraryObject("dart.collection")}.$constructor(elms);
+        var keys = Object.keys(obj);
+        var values = [];
+        keys.forEach(function(_, key) {
+          values.push(dynamicTo(obj[key]));
+        });
+
+        var map = new ${mangledNames.getLibraryObject("dart.collection")}.$constructor(keys, values);
         map.\$builtinTypeInfo = [${compiler.mangledNames.getLibraryObject("dart.core")}.${compiler.mangledNames.getClassName("dart.core", "String")}, null];
         return map;
       }
