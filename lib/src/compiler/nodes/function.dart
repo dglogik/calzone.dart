@@ -65,7 +65,7 @@ class Func implements Renderable {
       else if (transform == FunctionTransformation.REVERSED) compiler.baseTransformer.transformTo(tOutput, "returned", returnType);
 
       output.write(tOutput.length > 0 ? "var returned = " : "return ");
-      output.write("($code).call($_binding${paramString.length > 0 ? "," : ""}$fullParamString);");
+      output.write("($code).call($_binding${fullParamString.length > 0 ? "," : ""}$fullParamString);");
       output.write(tOutput.length > 0 ? tOutput.toString() + "return returned;}" : "}");
 
       if (_withSemicolon) output.write(";");

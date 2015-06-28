@@ -11,7 +11,6 @@ part "src/compiler/base_transformer.dart";
 part "src/compiler/compiler.dart";
 
 part "src/compiler/nodes/class.dart";
-part "src/compiler/nodes/property.dart";
 part "src/compiler/nodes/function.dart";
 
 const Map<String, String> NAME_REPLACEMENTS = const {
@@ -71,8 +70,16 @@ final String _OBJ_EACH_PREFIX = """
 """;
 
 final String _OVERRIDE_PREFIX = """
+  var sSym = typeof(Symbol) === 'function';
+
   var mdex = module.exports;
   var obdp = Object.defineProperty;
+  var obfr = Object.freeze;
+
+  var clIw = sSym ? Symbol() : "__isWrapped__";
+  var clOb = sSym ? Symbol() : "__obj__";
+  var clCl = sSym ? Symbol() : "_";
+
   function overrideFunc(cl, name, mangledName) {
     cl.__obj__[mangledName] = function() {
       var args = Array.prototype.slice.call(arguments);

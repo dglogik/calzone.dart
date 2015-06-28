@@ -8,13 +8,13 @@ class BaseTypeTransformer implements TypeTransformer {
 
   @override
   transformToDart(Compiler compiler, StringBuffer output) =>
-    output.write("if(obj.__isWrapped__) { return obj.__obj__; }");
+    output.write("if(obj[clIw]) { return obj[clOb]; }");
 
   @override
   transformFromDart(Compiler compiler, StringBuffer output) =>
     output.write("""
-      if(typeof(module.exports[obj.constructor.name]) !== 'undefined' && module.exports[obj.constructor.name]._) {
-        return module.exports[obj.constructor.name]._(obj);
+      if(typeof(module.exports[obj.constructor.name]) !== 'undefined' && module.exports[obj.constructor.name][clCl]) {
+        return module.exports[obj.constructor.name][clCl](obj);
       }
     """);
 
@@ -26,7 +26,7 @@ class BaseTypeTransformer implements TypeTransformer {
     if (PRIMITIVES.contains(type)) return;
 
     if (_compiler.classes.containsKey(type) && _compiler.classes[type].value) {
-      output.write("if(!$name.__isWrapped__) { $name = $name.__obj__; }");
+      output.write("if(!$name[clIw]) { $name = $name[clOb]; }");
       return;
     }
 
@@ -41,9 +41,9 @@ class BaseTypeTransformer implements TypeTransformer {
     if (PRIMITIVES.contains(type)) return;
 
     if (_compiler.classes.containsKey(type) && _compiler.classes[type].value) {
-      output.write("if(!$name.__isWrapped__) {");
+      output.write("if(!$name[clIw]) {");
       output.write("var _type = typeof(module.exports[$name.constructor.name]) === 'undefined' ? '$type' : $name.constructor.name;");
-      output.write("$name = module.exports[_type]._($name); }");
+      output.write("$name = module.exports[_type][clCl]($name); }");
       return;
     }
 

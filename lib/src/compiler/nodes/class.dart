@@ -24,8 +24,8 @@ class Class implements Renderable {
     List<StringBuffer> methods = [];
 
     StringBuffer constructor = new StringBuffer();
-    StringBuffer functions = new StringBuffer();
-    StringBuffer fields = new StringBuffer();
+    StringBuffer prototype = new StringBuffer();
+    StringBuffer global = new StringBuffer();
 
     _handleClassChildren(Class c, Map memberData, {bool isTopLevel: true}) {
       var mangledFields = compiler.mangledNames.getClassFields(this.libraryName, this.name);
@@ -53,8 +53,8 @@ class Class implements Renderable {
 
           if (data["kind"] == "constructor" && isTopLevel) {
             var isDefault = name.length == 0;
-            var buf = isDefault ? constructor : functions;
-            if (!isDefault) functions.write("mdex.${this.data["name"]}.$name = function() {");
+            var buf = isDefault ? constructor : global;
+            if (!isDefault) global.write("mdex.${this.data["name"]}.$name = function() {");
             buf.write("var __obj__ = (");
             var code = data["code"] == null || data["code"].length == 0
                 ? "function(){}"
@@ -65,7 +65,7 @@ class Class implements Renderable {
                 withSemicolon: false,
                 transform: FunctionTransformation.NONE)).render(compiler, buf);
             buf.write(").apply(this, arguments);");
-            if (!isDefault) functions.write("return mdex.${this.data["name"]}._(__obj__);};");
+            if (!isDefault) global.write("return mdex.${this.data["name"]}._(__obj__);};");
             continue;
           }
 
@@ -98,12 +98,14 @@ class Class implements Renderable {
               if (isTopLevel)
                 (new Func(data, params,
                     code: "init.allClasses.${data["code"].split(":")[0]}",
-                    prefix: "mdex.${this.data["name"]}")).render(compiler, functions);
+                    prefix: "mdex.${this.data["name"]}")).render(compiler, global);
             } else {
+              prototype.write(data["name"] + ": ");
               (new Func(data, params,
-                  prefix: "mdex.${this.data["name"]}.prototype",
-                  binding: "this.__obj__",
-                  code: "this.__obj__.${data["code"].split(":")[0]}")).render(compiler, functions);
+                  binding: "this[clOb]",
+                  code: "this[clOb].${data["code"].split(":")[0]}",
+                  withSemicolon: false)).render(compiler, prototype);
+              prototype.write(",");
 
               StringBuffer buf = new StringBuffer();
               methods.add(buf);
@@ -124,7 +126,12 @@ class Class implements Renderable {
           if (!data["name"].startsWith("_")) {
             if (c == null || !c.staticFields.contains(data["name"])) {
               var mangledName = mangledFields.length > 0 ? mangledFields.removeAt(0) : null;
-              (new ClassProperty(data, c, mangledName: mangledName)).render(compiler, fields);
+
+              prototype.write("get ${data["name"]}() { var returned = this[clOb].$mangledName;");
+              compiler.baseTransformer.transformFrom(prototype, "returned", data["type"]);
+              prototype.write("return returned;},set ${data["name"]}(v) {");
+              compiler.baseTransformer.transformTo(prototype, "v", data["type"]);
+              prototype.write("this[clOb].$mangledName = v;},");
             } else {
               // TODO
               // (new ClassProperty(data, c, isStatic: true)).render(compiler, functions);
@@ -134,35 +141,30 @@ class Class implements Renderable {
       }
 
       for (var accessor in accessors) {
-        fields.write("obdp(this, \"$accessor\", {");
-
-        fields.write("enumerable: true");
         if (getters[accessor] != null) {
-          fields.write(",get: function() { var returned = (");
+          prototype.write("get $accessor() {");
           (new Func(getters[accessor], _getParamsFromInfo(compiler, getters[accessor]["type"]),
-              binding: "this.__obj__",
+              binding: "this[clOb]",
               transform: FunctionTransformation.NONE,
-              withSemicolon: false)).render(compiler, fields);
-          fields.write(").apply(this, arguments);");
-          compiler.baseTransformer.transformFrom(fields, "returned", getters[accessor]["type"]);
-          fields.write("return returned;}");
+              withSemicolon: false)).render(compiler, prototype);
+          prototype.write(").apply(this, arguments);");
+          compiler.baseTransformer.transformFrom(prototype, "returned", getters[accessor]["type"]);
+          prototype.write("return returned;},");
         }
 
         if (setters[accessor] != null) {
-          fields.write(",set: function(v) {");
-          compiler.baseTransformer.transformTo(fields, "v", setters[accessor]["type"]);
-          fields.write("(");
+          prototype.write("set $accessor(v) {");
+          compiler.baseTransformer.transformTo(prototype, "v", setters[accessor]["type"]);
+          prototype.write("(");
           (new Func(setters[accessor], _getParamsFromInfo(compiler, setters[accessor]["type"]),
-              binding: "this.__obj__",
-              withSemicolon: false)).render(compiler, fields);
-          fields.write(").call(this, v);}");
+              binding: "this[clOb]",
+              withSemicolon: false)).render(compiler, prototype);
+          prototype.write(").call(this, v);},");
         } else if (getters[accessor] != null) {
-          fields.write(",set: function(v) {");
-          compiler.baseTransformer.transformTo(fields, "v", getters[accessor]["type"]);
-          fields.write("this.__obj__.${getters[accessor]['code'].split(':')[0]} = function() { return v; };}");
+          prototype.write("set $accessor(v) {");
+          compiler.baseTransformer.transformTo(prototype, "v", getters[accessor]["type"]);
+          prototype.write("this[clOb].${getters[accessor]['code'].split(':')[0]} = function() { return v; };},");
         }
-
-        fields.write("});");
       }
     }
 
@@ -178,27 +180,15 @@ class Class implements Renderable {
               isTopLevel: false);
       });
 
-    output.write("function ${name}Fields() {");
-    output.write(fields.toString());
-    output.write("}");
-
     output.write("mdex.$name = function $name() {");
     output.write(constructor.toString());
 
-    (new ClassProperty({
-      "name": "__isWrapped__"
-    }, this, value: "true")).render(compiler, output);
+    output.write("this[clOb] = __obj__;");
 
-    (new ClassProperty({
-      "name": "__obj__"
-    }, this, value: "__obj__")).render(compiler, output);
-
-    output.write("${name}Fields.call(this);");
     output.write("};");
 
     output.write("""
-    obdp(mdex.$name, 'class', {
-      get: function() {
+    mdex.$name.class = obfr(function() {
         function $name() {
           mdex.$name.apply(this, arguments);
           var proto = Object.getPrototypeOf(this);
@@ -212,30 +202,27 @@ class Class implements Renderable {
         $name.prototype = Object.create(mdex.$name.prototype);
 
         return $name;
-      }
     });
     """);
 
-    (new ClassProperty({
-      "name": "_"
-    }, this, isStatic: true, value: () {
-      output.write("function $name(__obj__) {var returned = Object.create($prefix.$name.prototype);");
-      output.write("(function() {");
+    var proto = prototype.toString();
+    // cut off trailing comma
+    if(proto.length > 0) {
+      output.write("mdex.$name.prototype = {");
+      output.write(proto.substring(0, proto.length - 1));
+      output.write("};");
+    }
+    output.write("mdex.$name.prototype[clIw] = true;");
 
-      (new ClassProperty({
-        "name": "__isWrapped__"
-      }, this, value: "true")).render(compiler, output);
+    output.write(global.toString());
 
-      (new ClassProperty({
-        "name": "__obj__"
-      }, this, value: "__obj__")).render(compiler, output);
+    output.write("mdex.$name[clCl] = ");
+    output.write("function(__obj__) {var returned = Object.create($prefix.$name.prototype);");
+    output.write("(function() {");
 
-      output.write("${name}Fields.call(this);");
+    output.write("this[clOb] = __obj__;");
 
-      output.write("}.bind(returned))();");
-      output.write("return returned;}");
-    })).render(compiler, output);
-
-    output.write(functions.toString());
+    output.write("}.bind(returned))();");
+    output.write("return returned;};");
   }
 }

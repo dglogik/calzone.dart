@@ -12,10 +12,10 @@ class ClosureTransformer implements TypeTransformer {
         var argCount = (new RegExp(/function[^]*\(([^]*)\)/)).exec(obj.toString())[1].split(',').length;
         var returned = {};
         returned['${compiler.isMinified ? "\$" : "call\$"}' + argCount] = function() {
-          var args = Array.prototype.slice.call(arguments);
-          args.forEach(function(arg, index) {
-            args[index] = dynamicFrom(arg);
-          });
+          var args = new Array(arguments.length);
+          for(var i = 0; i < args.length; ++i) {
+            args[i] = dynamicFrom(arguments[i]);
+          }
           return dynamicTo(obj.apply(this, args));
         };
         return returned;
