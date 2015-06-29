@@ -76,9 +76,9 @@ final String _OVERRIDE_PREFIX = """
   var obdp = Object.defineProperty;
   var obfr = Object.freeze;
 
-  var clIw = sSym ? Symbol() : "__isWrapped__";
-  var clOb = sSym ? Symbol() : "__obj__";
-  var clCl = sSym ? Symbol() : "_";
+  var clIw = sSym ? Symbol.for("calzone.isWrapped") : "__isWrapped__";
+  var clOb = sSym ? Symbol.for("calzone.obj") : "__obj__";
+  var clCl = sSym ? Symbol.for("calzone.constructor") : "_";
 
   function overrideFunc(cl, name, mangledName) {
     cl.__obj__[mangledName] = function() {

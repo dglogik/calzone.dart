@@ -82,7 +82,10 @@ class Compiler {
     }
     output.write("return obj;}");
 
-    children.forEach((c) => c.render(this, output));
+    children.forEach((c) {
+      if(!c.data["name"].startsWith("_"))
+        c.render(this, output);
+    });
 
     return globals.join() + output.toString();
   }

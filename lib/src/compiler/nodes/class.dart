@@ -18,8 +18,6 @@ class Class implements Renderable {
   render(Compiler compiler, StringBuffer output) {
     String prefix = "mdex";
 
-    if (name.startsWith("_")) return;
-
     List<String> names = [];
     List<StringBuffer> methods = [];
 
@@ -42,14 +40,12 @@ class Class implements Renderable {
         var type = child[0];
         var id = child[1];
 
+        var data = compiler.info.getElement(type, id);
+        var name = data["name"];
+
         if (type == "function") {
-          var data = compiler.info.getElement(type, id);
-          var name = data["name"];
-
-          if (names.contains(name)) continue;
+          if (names.contains(name) || name.startsWith("_")) continue;
           names.add(name);
-
-          if (name.startsWith("_")) continue;
 
           if (data["kind"] == "constructor" && isTopLevel) {
             var isDefault = name.length == 0;
@@ -118,15 +114,13 @@ class Class implements Renderable {
         }
 
         if (type == "field") {
-          var data = compiler.info.getElement(type, id);
-
           if (names.contains(data["name"])) continue;
           names.add(data["name"]);
 
+          var mangledName = mangledFields.length > 0 ? mangledFields.removeAt(0) : null;
+
           if (!data["name"].startsWith("_")) {
             if (c == null || !c.staticFields.contains(data["name"])) {
-              var mangledName = mangledFields.length > 0 ? mangledFields.removeAt(0) : null;
-
               prototype.write("get ${data["name"]}() { var returned = this[clOb].$mangledName;");
               compiler.baseTransformer.transformFrom(prototype, "returned", data["type"]);
               prototype.write("return returned;},set ${data["name"]}(v) {");
