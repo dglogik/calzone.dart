@@ -23,7 +23,7 @@ class CollectionsTransformer implements TypeTransformer {
       if(obj.constructor.name === 'Object') {
         var keys = Object.keys(obj);
         var values = [];
-        keys.forEach(function(_, key) {
+        keys.forEach(function(key) {
           values.push(dynamicTo(obj[key]));
         });
 

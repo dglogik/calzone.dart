@@ -196,7 +196,7 @@ class Class implements Renderable {
         $name.prototype = Object.create(mdex.$name.prototype);
 
         return $name;
-    });
+    }());
     """);
 
     var proto = prototype.toString();
