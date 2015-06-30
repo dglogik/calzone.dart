@@ -108,7 +108,7 @@ class Class implements Renderable {
 
               var dartName = data["code"].split(":")[0];
 
-              buf.write("if(proto.$name) { overrideFunc(this, $name, $dartName); }");
+              buf.write("if(proto.$name) { overrideFunc(this, '$name', '$dartName'); }");
             }
           }
         }
@@ -181,6 +181,15 @@ class Class implements Renderable {
 
     output.write("};");
 
+    var proto = prototype.toString();
+    // cut off trailing comma
+    if(proto.length > 0) {
+      output.write("mdex.$name.prototype = {");
+      output.write(proto.substring(0, proto.length - 1));
+      output.write("};");
+    }
+    output.write("mdex.$name.prototype[clIw] = true;");
+
     output.write("""
     mdex.$name.class = obfr(function() {
         function $name() {
@@ -198,15 +207,6 @@ class Class implements Renderable {
         return $name;
     }());
     """);
-
-    var proto = prototype.toString();
-    // cut off trailing comma
-    if(proto.length > 0) {
-      output.write("mdex.$name.prototype = {");
-      output.write(proto.substring(0, proto.length - 1));
-      output.write("};");
-    }
-    output.write("mdex.$name.prototype[clIw] = true;");
 
     output.write(global.toString());
 
