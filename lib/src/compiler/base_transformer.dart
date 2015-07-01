@@ -25,11 +25,6 @@ class BaseTypeTransformer implements TypeTransformer {
     var type = tree[0];
     if (PRIMITIVES.contains(type)) return;
 
-    if (_compiler.classes.containsKey(type) && _compiler.classes[type].value) {
-      output.write("if(!$name[clIw]) { $name = $name[clOb]; }");
-      return;
-    }
-
     output.write("$name = dynamicTo($name);");
   }
 
@@ -39,13 +34,6 @@ class BaseTypeTransformer implements TypeTransformer {
 
     var type = tree[0];
     if (PRIMITIVES.contains(type)) return;
-
-    if (_compiler.classes.containsKey(type) && _compiler.classes[type].value) {
-      output.write("if(!$name[clIw]) {");
-      output.write("var _type = typeof(module.exports[$name.constructor.name]) === 'undefined' ? '$type' : $name.constructor.name;");
-      output.write("$name = module.exports[_type][clCl]($name); }");
-      return;
-    }
 
     output.write("$name = dynamicFrom($name);");
   }

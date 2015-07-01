@@ -26,7 +26,7 @@ class Class implements Renderable {
     StringBuffer global = new StringBuffer();
 
     _handleClassChildren(Class c, Map memberData, {bool isTopLevel: true}) {
-      var mangledFields = compiler.mangledNames.getClassFields(this.libraryName, this.name);
+      var mangledFields = compiler.mangledNames.getClassFields(c.libraryName, c.name);
       if(mangledFields == null)
         mangledFields = [];
 
@@ -56,7 +56,7 @@ class Class implements Renderable {
                 ? "function(){}"
                 : "${compiler.mangledNames.getLibraryObject(libraryName)}.${data["code"].split(":")[0].trim()}";
             var func = this.data["name"];
-            (new Func(data, _getParamsFromInfo(compiler, data["type"], compiler.analyzer.getFunctionParameters(this.libraryName, func, this.data["name"])),
+            (new Func(data, _getParamsFromInfo(compiler, data["type"], compiler.analyzer.getFunctionParameters(c.libraryName, func, memberData["name"])),
                 code: code,
                 withSemicolon: false,
                 transform: FunctionTransformation.NONE)).render(compiler, buf);
@@ -67,7 +67,7 @@ class Class implements Renderable {
 
           if (data["kind"] == "constructor" && !isTopLevel) continue;
 
-          var params = _getParamsFromInfo(compiler, data["type"], compiler.analyzer.getFunctionParameters(this.libraryName, data["name"], this.data["name"]));
+          var params = _getParamsFromInfo(compiler, data["type"], compiler.analyzer.getFunctionParameters(c.libraryName, data["name"], memberData["name"]));
 
           if (c != null && c.getters.contains(data["name"]) && params.length == 0) {
             if (!accessors.contains(name)) accessors.add(name);
@@ -108,7 +108,7 @@ class Class implements Renderable {
 
               var dartName = data["code"].split(":")[0];
 
-              buf.write("if(proto.$name) { overrideFunc(this, '$name', '$dartName'); }");
+              buf.write("if(proto.indexOf('$name') > -1) { overrideFunc(this, '$name', '$dartName'); }");
             }
           }
         }
@@ -117,19 +117,23 @@ class Class implements Renderable {
           if (names.contains(data["name"])) continue;
           names.add(data["name"]);
 
-          var mangledName = mangledFields.length > 0 ? mangledFields.removeAt(0) : null;
+          if (c == null) continue;
 
-          if (!data["name"].startsWith("_")) {
-            if (c == null || !c.staticFields.contains(data["name"])) {
-              prototype.write("get ${data["name"]}() { var returned = this[clOb].$mangledName;");
-              compiler.baseTransformer.transformFrom(prototype, "returned", data["type"]);
-              prototype.write("return returned;},set ${data["name"]}(v) {");
-              compiler.baseTransformer.transformTo(prototype, "v", data["type"]);
-              prototype.write("this[clOb].$mangledName = v;},");
-            } else {
-              // TODO
-              // (new ClassProperty(data, c, isStatic: true)).render(compiler, functions);
-            }
+          if (!c.staticFields.contains(data["name"])) {
+            var mangledName = mangledFields.length > 0 ? mangledFields.removeAt(0) : null;
+
+            if (data["name"].startsWith("_")) continue;
+
+            prototype.write("get ${data["name"]}() { var returned = this[clOb].$mangledName;");
+            compiler.baseTransformer.transformFrom(prototype, "returned", data["type"]);
+            prototype.write("return returned;},set ${data["name"]}(v) {");
+            compiler.baseTransformer.transformTo(prototype, "v", data["type"]);
+            prototype.write("this[clOb].$mangledName = v;},");
+          } else {
+            if (data["name"].startsWith("_")) continue;
+
+            // TODO
+            // (new ClassProperty(data, c, isStatic: true)).render(compiler, functions);
           }
         }
       }
@@ -137,6 +141,7 @@ class Class implements Renderable {
       for (var accessor in accessors) {
         if (getters[accessor] != null) {
           prototype.write("get $accessor() {");
+          prototype.write("var returned = (");
           (new Func(getters[accessor], _getParamsFromInfo(compiler, getters[accessor]["type"]),
               binding: "this[clOb]",
               transform: FunctionTransformation.NONE,
@@ -164,7 +169,7 @@ class Class implements Renderable {
 
     _handleClassChildren(this, data);
 
-    this.inheritedFrom.reversed.forEach((superClass) {
+    this.inheritedFrom.forEach((superClass) {
         var classObj = compiler.analyzer.getClass(null, superClass);
         if (classObj != null)
           _handleClassChildren(classObj,
@@ -194,7 +199,7 @@ class Class implements Renderable {
     mdex.$name.class = obfr(function() {
         function $name() {
           mdex.$name.apply(this, arguments);
-          var proto = Object.getPrototypeOf(this);
+          var proto = Object.keys(Object.getPrototypeOf(this));
     """);
 
     methods.forEach((method) => output.write(method.toString()));

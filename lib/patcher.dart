@@ -21,8 +21,13 @@ function objEach(obj, cb, thisArg) {
 }
 
 var map = {
-  libraries: {}
+  libraries: {},
+  mangledGlobalNames: {}
 };
+
+objEach(init.mangledGlobalNames, function(value, key) {
+  map.mangledGlobalNames[key] = value;
+});
 
 var alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 

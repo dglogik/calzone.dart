@@ -16,3 +16,10 @@ class Duo<K, V> {
 
   Duo(this.key, this.value);
 }
+
+class MutableDuo<K, V> {
+  K key;
+  V value;
+
+  MutableDuo(this.key, this.value);
+}

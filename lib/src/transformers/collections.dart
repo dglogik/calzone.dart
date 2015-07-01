@@ -23,6 +23,7 @@ class CollectionsTransformer implements TypeTransformer {
       if(obj.constructor.name === 'Object') {
         var keys = Object.keys(obj);
         var values = [];
+
         keys.forEach(function(key) {
           values.push(dynamicTo(obj[key]));
         });
@@ -37,6 +38,10 @@ class CollectionsTransformer implements TypeTransformer {
   transformFromDart(Compiler compiler, StringBuffer output) {
     var data = compiler.classes["_js_helper.JsLinkedHashMap"];
 
+    var listClass = compiler.classes["dart.core.Iterable"].key;
+    var forEach = listClass.getMangledName("forEach");
+    var elementAt = listClass.getMangledName("elementAt");
+
     output.write("""
       if(Array.isArray(obj)) {
         return obj.map(function(e) {
@@ -48,9 +53,14 @@ class CollectionsTransformer implements TypeTransformer {
         var keys = obj.${data.key.getMangledName("keys")}();
         var values = obj.${data.key.getMangledName("values")}();
 
+        var index = 0;
         var a = {};
-        keys.forEach(function(key, index) {
-          a[key] = dynamicFrom(values[index]);
+
+        keys.$forEach(null, {
+          ${compiler.isMinified ? "\$1" : "call\$1"}: function(key) {
+            a[dynamicFrom(key)] = dynamicFrom(values.$elementAt(null, index));
+            index++;
+          }
         });
 
         return a;

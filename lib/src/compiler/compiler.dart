@@ -2,7 +2,7 @@ part of calzone.compiler;
 
 class Compiler {
   // instance of dartanalyzer visitor
-  final Analyzer analyzer;
+  Analyzer analyzer;
 
   // *.info.json
   final InfoData info;
@@ -25,9 +25,9 @@ class Compiler {
   bool isMinified;
 
   Compiler(String dartFile, dynamic infoFile, dynamic mangledFile, {this.typeTransformers: const [], this.isMinified: false}):
-      analyzer = new Analyzer(dartFile),
       info = new InfoData(infoFile is String ? JSON.decode(new File(infoFile).readAsStringSync()) : infoFile),
       mangledNames = new MangledNames(mangledFile is String ? JSON.decode(new File(mangledFile).readAsStringSync()) : mangledFile) {
+    analyzer = new Analyzer(mangledNames, dartFile);
     baseTransformer = new BaseTypeTransformer(this);
   }
 
