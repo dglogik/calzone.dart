@@ -128,13 +128,18 @@ class MangledNames extends _JSONWrapper {
     return data["libraries"][library]["obj"];
   }
 
-  String getGlobalName(String globalName) {
-    if (!data["mangledGlobalNames"].containsKey(globalName))
-      throw globalName;
-    var name = data["mangledGlobalNames"][globalName];
-    if(name is List)
-      return name.first;
-    return name;
+  // warning: this method doesn't throw, it returns null
+  String getStaticField(String library, String staticField, {String className}) {
+    if(className != null)
+      staticField = "$className.$staticField";
+
+    if (!data["libraries"].containsKey(library))
+      throw library;
+
+    if (!data["libraries"][library]["staticFields"].containsKey(staticField))
+      return null;
+
+    return data["libraries"][library]["staticFields"][staticField];
   }
 }
 

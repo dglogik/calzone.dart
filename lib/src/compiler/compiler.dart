@@ -68,6 +68,8 @@ class Compiler {
     output.write(_OBJ_EACH_PREFIX);
     output.write(_OVERRIDE_PREFIX);
 
+    output.write("var stat = ${isMinified ? "I.p" : r"Isolate.$isolateProperties"};");
+
     output.write("function dynamicTo(obj) {if(typeof(obj) === 'undefined' || obj === null) { return obj; }");
     baseTransformer.transformToDart(this, output);
     for (var transformer in typeTransformers) {

@@ -115,14 +115,10 @@ class ParamVisitor extends Visitor<Duo<List<Parameter>, String>> {
 
       String defaultValue = "null";
       if(node is DefaultFormalParameter && node.defaultValue != null) {
-        /*
         var primitiveVisitor = new PrimitiveVisitor(analyzer, libraryName, new MutableDuo<String, String>("", this.data.value));
         primitiveVisitor.visitNode(node.defaultValue);
         if(primitiveVisitor.data.key.length > 0)
           defaultValue = primitiveVisitor.data.key;
-        */
-        if(node.defaultValue is Literal)
-          defaultValue = node.defaultValue.toString();
       }
 
       data.key.add(new Parameter(norm.kind, norm.type.toString(),
@@ -139,8 +135,6 @@ class PrimitiveVisitor extends Visitor<MutableDuo<String, String>> {
   PrimitiveVisitor(analyzer, library, data): super(analyzer, library, data);
 
   bool visit(AstNode node) {
-    var dataKey = this.data.key;
-
     if(node is Identifier) {
       var parts;
 
@@ -153,7 +147,7 @@ class PrimitiveVisitor extends Visitor<MutableDuo<String, String>> {
       if(parts.length > 0) {
         // edge case found through testing
         if(parts.join(".") == "double.NAN") {
-          dataKey += "Number.NaN";
+          data.key += "Number.NaN";
           return true;
         }
 
@@ -162,8 +156,9 @@ class PrimitiveVisitor extends Visitor<MutableDuo<String, String>> {
           var fields = analyzer.compiler.mangledNames.getClassFields(this.libraryName, data.value);
 
           if(fields.contains(parts[0])) {
-            var mangledName = analyzer.compiler.mangledNames.getLibraryObject(this.libraryName);
-            dataKey += analyzer.compiler.mangledNames.getGlobalName("$mangledName.${parts[0]}.${data.value}");
+            var mangledStatic = analyzer.compiler.mangledNames.getStaticField(this.libraryName, parts[0], className: data.value);
+            if(mangledStatic != null)
+              data.key += "stat[$mangledStatic]";
 
             return true;
           }
@@ -171,9 +166,10 @@ class PrimitiveVisitor extends Visitor<MutableDuo<String, String>> {
 
         // global scope
         var libraryName = analyzer.dictionary.searchForGlobalProp(parts[0], libraryName: this.libraryName);
+        if(libraryName == null)
+          return true;
 
         var mangledName = analyzer.compiler.mangledNames.getLibraryObject(libraryName);
-        dataKey += "$mangledName.";
 
         var libraryObj = analyzer.dictionary.libraries[libraryName];
 
@@ -184,23 +180,25 @@ class PrimitiveVisitor extends Visitor<MutableDuo<String, String>> {
             break;
         }
 
-        if(node is ClassDeclaration || node is EnumDeclaration && parts.length == 2
-            && analyzer.compiler.mangledNames.data["mangledGlobalNames"].containsKey("$mangledName.${parts[0]}")) {
+        if(node is ClassDeclaration || node is EnumDeclaration && parts.length == 2) {
           var c = analyzer.compiler.classes.containsKey("$libraryName.${parts[0]}")
             ? analyzer.compiler.classes["$libraryName.${parts[0]}"]
             : analyzer.compiler.classes["${parts[0]}"];
 
           if(c != null && c.key.children.containsKey(parts[1])) {
-            dataKey += c.key.getMangledName(parts[1]);
+            data.key += c.key.getMangledName(parts[1]);
           } else {
             // must access a static variable
-            dataKey += analyzer.compiler.mangledNames.getGlobalName("$mangledName.${parts[1]}.${parts[0]}");
+            var mangledStatic = analyzer.compiler.mangledNames.getStaticField(libraryName, parts[1], className: parts[0]);
+            if(mangledStatic != null)
+              data.key += "stat[$mangledStatic]";
           }
         }
 
-        if(node is TopLevelVariableDeclaration
-            && analyzer.compiler.mangledNames.data["mangledGlobalNames"].containsKey("$mangledName.${parts[0]}")) {
-          dataKey += analyzer.compiler.mangledNames.getGlobalName("$mangledName.${parts[0]}");
+        if(node is TopLevelVariableDeclaration) {
+          var mangledStatic = analyzer.compiler.mangledNames.getStaticField(libraryName, parts[0]);
+          if(mangledStatic != null)
+            data.key += "stat[$mangledStatic]";
         }
       }
 
@@ -208,29 +206,29 @@ class PrimitiveVisitor extends Visitor<MutableDuo<String, String>> {
     }
 
     if(node is ListLiteral) {
-      dataKey += "[";
+      data.key += "[";
 
       node.elements.forEach((element) => visit(element));
 
-      dataKey += "]";
+      data.key += "]";
       return true;
     }
 
     if(node is MapLiteral) {
-      dataKey += "{";
+      data.key += "{";
 
       node.entries.forEach((MapLiteralEntry entry) {
         visit(entry.key);
-        dataKey += ":";
+        data.key += ":";
         visit(entry.value);
       });
 
-      dataKey += "}";
+      data.key += "}";
       return true;
     }
 
     if(node is Literal) {
-      dataKey += node.toString();
+      data.key += node.toString();
       return true;
     }
 

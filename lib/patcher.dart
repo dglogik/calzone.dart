@@ -21,34 +21,20 @@ function objEach(obj, cb, thisArg) {
 }
 
 var map = {
-  libraries: {},
-  mangledGlobalNames: {}
+  libraries: {}
 };
+
+var regex = new RegExp("[A-Za-z_]+", "g");
+
+var staticFields = typeof(Isolate) !== "undefined" ? Isolate.$isolateProperties : I.p;
+var staticFieldKeys = Object.keys(staticFields);
 
 var alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-objEach(init.mangledGlobalNames, function(key, value) {
-  if(key.indexOf(" ") >= 0 || key.indexOf(":") >= 0)
-    return;
-
-  var alphadex = 25;
-  while(--alphadex >= 0) {
-    if(eval("typeof(" + alphabet[alphadex] + ")") === "object" && eval("typeof(" + alphabet[alphadex] + "." + value + ")") !== "undefined") {
-      key = alphabet[alphadex] + "." + key;
-      alphadex = -1;
-    }
-  }
-
-  if(typeof(map.mangledGlobalNames[key]) !== 'undefined') {
-    map.mangledGlobalNames[key] = [].concat(map.mangledGlobalNames[key]).push(value);
-  } else {
-    map.mangledGlobalNames[key] = value;
-  }
-});
-
 init.libraries.forEach(function(elm) {
   var library = {
-    names: {}
+    names: {},
+    staticFields: {}
   };
 
   var length = elm.length;
@@ -70,31 +56,20 @@ init.libraries.forEach(function(elm) {
         if(init.allClasses[name] && init.mangledGlobalNames[name]) {
           library.names[init.mangledGlobalNames[name]] = {
             name: name,
-            fields: init.allClasses[name]['$__fields__']
+            fields: init.allClasses[name]['$__fields__'],
           };
 
-          if(library.obj) {
-            Object.keys(map.mangledGlobalNames).forEach(function(globalName) {
-              if(globalName.indexOf(library.obj + '.') === 0) {
-                var value = map.mangledGlobalNames[globalName];
-                if(Array.isArray(value)) {
-                  value.forEach(function(subvalue) {
-                    if(init.allClasses[name]['$__fields__'].indexOf(subvalue) >= 0) {
-                      if(value.length == 1) {
-                        delete map.mangledGlobalNames[globalName];
-                      } else {
-                        var index = value.indexOf(subvalue);
-                        map.mangledGlobalNames[globalNames].slice(index, index++);
-                      }
-                      map.mangledGlobalNames[globalName + '.' + init.mangledGlobalNames[name]] = subvalue;
-                    }
-                  });
-                } else if(init.allClasses[name]['$__fields__'].indexOf(value) >= 0) {
-                  delete map.mangledGlobalNames[globalName];
-                  map.mangledGlobalNames[globalName + '.' + init.mangledGlobalNames[name]] = value;
-                }
+          if(init.statics[name] && init.statics[name]['^']) {
+            var names = init.statics[name]['^'];
+
+            var field = regex.exec(names);
+            while(field != null) {
+              field = field[0];
+              if(staticFieldKeys.indexOf(field) >= 0) {
+                library.staticFields[name + '.' + init.mangledGlobalNames[field]] = field;
               }
-            });
+              field = regex.exec(names);
+            }
           }
         } else if(init.mangledGlobalNames[name] && init.mangledGlobalNames[name].indexOf('new ') === 0) {
           library.names[init.mangledGlobalNames[name].split(':')[0]] = {
@@ -245,7 +220,7 @@ class Patcher {
         }
 
         if (line.startsWith("$main:")) {
-          data.replaceRange(index, index + 3, ["Q:[function(a){},\"\$1\",\"ao\",2,0,279],"]);
+          data.replaceRange(index, index + 4, ["Q:[function(a){},\"\$1\",\"ao\",2,0,279],"]);
           foundMain = true;
           if(foundMain && foundTypeCheck)
             break;
@@ -267,7 +242,7 @@ class Patcher {
         }
 
         if (line.contains("main: [function(args) {")) {
-          data.removeRange(index + 1, index + 4);
+          data.removeRange(index + 1, index + 5);
           foundMain = true;
           if(foundMain && foundTypeCheck)
             break;
