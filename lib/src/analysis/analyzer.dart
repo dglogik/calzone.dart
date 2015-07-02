@@ -9,7 +9,6 @@ class Dictionary {
     _crawler = new SourceCrawler(packageRoots: packageRoots);
 
   String searchForGlobalProp(String name, {String libraryName, LibraryTuple library}) {
-    /*
     String _getName(CompilationUnit astUnit) {
       String name;
       astUnit.directives
@@ -33,19 +32,17 @@ class Dictionary {
       if(searchForProp(astUnit, name) != null)
         return _getName(astUnit);
     }
-    */
 
     return null;
   }
 
   AstNode searchForProp(CompilationUnit unit, String property) {
-    /*
     for(var d in unit.declarations) {
       if(d is NamedCompilationUnitMember && d.name.toString() == property
           || d is TopLevelVariableDeclaration && d.variables.variables.any((v) => v.name.toString() == property))
         return d;
     }
-    */
+    
     return null;
   }
 

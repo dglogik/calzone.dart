@@ -115,10 +115,14 @@ class ParamVisitor extends Visitor<Duo<List<Parameter>, String>> {
 
       String defaultValue = "null";
       if(node is DefaultFormalParameter && node.defaultValue != null) {
+        /*
         var primitiveVisitor = new PrimitiveVisitor(analyzer, libraryName, new MutableDuo<String, String>("", this.data.value));
         primitiveVisitor.visitNode(node.defaultValue);
         if(primitiveVisitor.data.key.length > 0)
           defaultValue = primitiveVisitor.data.key;
+        */
+        if(node.defaultValue is Literal)
+          defaultValue = node.defaultValue.toString();
       }
 
       data.key.add(new Parameter(norm.kind, norm.type.toString(),
@@ -137,7 +141,7 @@ class PrimitiveVisitor extends Visitor<MutableDuo<String, String>> {
   bool visit(AstNode node) {
     var dataKey = this.data.key;
 
-    if(node is Identifier && false) {
+    if(node is Identifier) {
       var parts;
 
       if(node is PrefixedIdentifier)
@@ -146,8 +150,7 @@ class PrimitiveVisitor extends Visitor<MutableDuo<String, String>> {
       if(node is SimpleIdentifier)
         parts = [node.toString()];
 
-      if(false) {
-      // if(parts.length > 0) {
+      if(parts.length > 0) {
         // edge case found through testing
         if(parts.join(".") == "double.NAN") {
           dataKey += "Number.NaN";
