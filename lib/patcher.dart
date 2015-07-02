@@ -25,11 +25,26 @@ var map = {
   mangledGlobalNames: {}
 };
 
-objEach(init.mangledGlobalNames, function(value, key) {
-  map.mangledGlobalNames[key] = value;
-});
-
 var alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+objEach(init.mangledGlobalNames, function(key, value) {
+  if(key.indexOf(" ") >= 0 || key.indexOf(":") >= 0)
+    return;
+
+  var alphadex = 25;
+  while(--alphadex >= 0) {
+    if(eval("typeof(" + alphabet[alphadex] + ")") === "object" && eval("typeof(" + alphabet[alphadex] + "." + value + ")") !== "undefined") {
+      key = alphabet[alphadex] + "." + key;
+      alphadex = -1;
+    }
+  }
+
+  if(typeof(map.mangledGlobalNames[key]) !== 'undefined') {
+    map.mangledGlobalNames[key] = [].concat(map.mangledGlobalNames[key]).push(value);
+  } else {
+    map.mangledGlobalNames[key] = value;
+  }
+});
 
 init.libraries.forEach(function(elm) {
   var library = {
@@ -57,6 +72,30 @@ init.libraries.forEach(function(elm) {
             name: name,
             fields: init.allClasses[name]['$__fields__']
           };
+
+          if(library.obj) {
+            Object.keys(map.mangledGlobalNames).forEach(function(globalName) {
+              if(globalName.indexOf(library.obj + '.') === 0) {
+                var value = map.mangledGlobalNames[globalName];
+                if(Array.isArray(value)) {
+                  value.forEach(function(subvalue) {
+                    if(init.allClasses[name]['$__fields__'].indexOf(subvalue) >= 0) {
+                      if(value.length == 1) {
+                        delete map.mangledGlobalNames[globalName];
+                      } else {
+                        var index = value.indexOf(subvalue);
+                        map.mangledGlobalNames[globalNames].slice(index, index++);
+                      }
+                      map.mangledGlobalNames[globalName + '.' + init.mangledGlobalNames[name]] = subvalue;
+                    }
+                  });
+                } else if(init.allClasses[name]['$__fields__'].indexOf(value) >= 0) {
+                  delete map.mangledGlobalNames[globalName];
+                  map.mangledGlobalNames[globalName + '.' + init.mangledGlobalNames[name]] = value;
+                }
+              }
+            });
+          }
         } else if(init.mangledGlobalNames[name] && init.mangledGlobalNames[name].indexOf('new ') === 0) {
           library.names[init.mangledGlobalNames[name].split(':')[0]] = {
             name: name
@@ -256,7 +295,7 @@ class Scraper extends Patcher {
 
     String returned = "";
 
-    await process.stderr.forEach((data) => throw UTF8.decode(data));
+    await process.stderr.forEach((data) => stderr.writeln(UTF8.decode(data)));
     await process.stdout.forEach((data) => returned += UTF8.decode(data));
 
     return returned;

@@ -82,16 +82,15 @@ final String _OVERRIDE_PREFIX = """
 
   function overrideFunc(cl, name, mangledName) {
     cl[clOb][mangledName] = function() {
-      var args = Array.prototype.slice.call(arguments);
+      var args = new Array(arguments.length);
       var length = args.length;
-      var index = 0;
-
-      for(; index < length; index++) {
-        args[index] = dynamicFrom(args[index]);
+      for(var i = 0; i < length; ++i) {
+        // console.log(arguments[i]);
+        args[i] = dynamicFrom(arguments[i]);
       }
 
-      return dynamicTo((this[name]).apply(this, args));
-    }.bind(cl);
+      return dynamicTo((cl[name]).apply(cl, args));
+    };
   }
 """;
 
@@ -127,6 +126,15 @@ class MangledNames extends _JSONWrapper {
     if (!data["libraries"].containsKey(library))
       throw library;
     return data["libraries"][library]["obj"];
+  }
+
+  String getGlobalName(String globalName) {
+    if (!data["mangledGlobalNames"].containsKey(globalName))
+      throw globalName;
+    var name = data["mangledGlobalNames"][globalName];
+    if(name is List)
+      return name.first;
+    return name;
   }
 }
 

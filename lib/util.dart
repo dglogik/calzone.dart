@@ -17,7 +17,7 @@ class Duo<K, V> {
   Duo(this.key, this.value);
 }
 
-class MutableDuo<K, V> {
+class MutableDuo<K, V> implements Duo<K, V> {
   K key;
   V value;
 

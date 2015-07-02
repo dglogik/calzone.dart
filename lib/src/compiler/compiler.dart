@@ -27,7 +27,7 @@ class Compiler {
   Compiler(String dartFile, dynamic infoFile, dynamic mangledFile, {this.typeTransformers: const [], this.isMinified: false}):
       info = new InfoData(infoFile is String ? JSON.decode(new File(infoFile).readAsStringSync()) : infoFile),
       mangledNames = new MangledNames(mangledFile is String ? JSON.decode(new File(mangledFile).readAsStringSync()) : mangledFile) {
-    analyzer = new Analyzer(mangledNames, dartFile);
+    analyzer = new Analyzer(this, dartFile);
     baseTransformer = new BaseTypeTransformer(this);
   }
 
