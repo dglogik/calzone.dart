@@ -42,7 +42,7 @@ class Dictionary {
           || d is TopLevelVariableDeclaration && d.variables.variables.any((v) => v.name.toString() == property))
         return d;
     }
-    
+
     return null;
   }
 
@@ -54,12 +54,6 @@ class Dictionary {
         return;
       libraries[library.name] = library;
     });
-  }
-
-  visitImports({String libraryName, LibraryTuple library}) {
-    if(library == null)
-      library = libraries[libraryName];
-    crawl(library.path);
   }
 }
 
@@ -79,21 +73,19 @@ class Analyzer {
   }
 
   buildLibrary(String library, [bool deep = true]) {
-    if(!dictionary.libraries.containsKey(library))
-      return;
-    if(_nodeTree.containsKey(library))
-      return;
+    if (!dictionary.libraries.containsKey(library) || _nodeTree.containsKey(library)) return;
 
-    dictionary.visitImports(libraryName: library);
+    var libPath = dictionary.libraries[library].path;
+    dictionary.crawl(libPath);
 
-    var visitor = new AnalyzerVisitor(this, library, {});
-
-    if(deep) {
-      dictionary.libraries[library].astUnits.forEach((u) =>
-          u.visitChildren(visitor));
+    if (!deep) {
+      dictionary.imports[library].forEach((lib) => buildLibrary(lib.name, true));
     }
 
-    _nodeTree[library] = visitor.data;
+    _nodeTree[library] = {};
+    var visitor = new AnalyzerVisitor(this, library, _nodeTree[library]);
+
+    dictionary.libraries[library].astUnits.forEach((u) => u.visitChildren(visitor));
   }
 
   List<Parameter> getFunctionParameters(String library, String function, [String c]) {

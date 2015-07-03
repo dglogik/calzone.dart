@@ -13,8 +13,8 @@ class BaseTypeTransformer implements TypeTransformer {
   @override
   transformFromDart(Compiler compiler, StringBuffer output) =>
     output.write("""
-      if(typeof(module.exports[obj.constructor.name]) !== 'undefined' && module.exports[obj.constructor.name][clCl]) {
-        return module.exports[obj.constructor.name][clCl](obj);
+      if(typeof(module.exports[init.mangledGlobalNames[obj.constructor.name]]) !== 'undefined' && module.exports[init.mangledGlobalNames[obj.constructor.name]][clCl]) {
+        return module.exports[init.mangledGlobalNames[obj.constructor.name]][clCl](obj);
       }
     """);
 

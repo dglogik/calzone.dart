@@ -51,10 +51,15 @@ class AnalyzerVisitor extends Visitor<Map> {
 
       var copy = []..addAll(tree);
       copy.forEach((type) {
-        var vals = analyzer._nodeTree.values.where((val) => val.keys.contains(type));
-        if (vals.length > 0) {
-          tree.addAll(vals.first[type].inheritedFrom);
-          staticFields.addAll(vals.first[type].staticFields);
+        var prop = analyzer.dictionary.searchForGlobalProp(type, libraryName: libraryName);
+
+        if(prop != null && analyzer._nodeTree.containsKey(prop)) {
+          var nodeTree = analyzer._nodeTree[prop];
+          if(prop == this.libraryName)
+            nodeTree = this.data;
+
+          if(nodeTree.containsKey(type))
+            tree.addAll(nodeTree[type].inheritedFrom);
         }
       });
 

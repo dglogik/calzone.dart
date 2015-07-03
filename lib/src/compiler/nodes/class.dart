@@ -16,8 +16,6 @@ class Class implements Renderable {
   Class(this.name, this.libraryName, {this.staticFields: const [], this.getters: const [], this.setters: const [], this.inheritedFrom: const []});
 
   render(Compiler compiler, StringBuffer output) {
-    String prefix = "mdex";
-
     List<String> names = [];
     List<StringBuffer> methods = [];
 
@@ -216,12 +214,8 @@ class Class implements Renderable {
     output.write(global.toString());
 
     output.write("mdex.$name[clCl] = ");
-    output.write("function(__obj__) {var returned = Object.create($prefix.$name.prototype);");
-    output.write("(function() {");
-
-    output.write("this[clOb] = __obj__;");
-
-    output.write("}.bind(returned))();");
+    output.write("function(__obj__) {var returned = Object.create(mdex.$name.prototype);");
+    output.write("returned[clOb] = __obj__;");
     output.write("return returned;};");
   }
 }

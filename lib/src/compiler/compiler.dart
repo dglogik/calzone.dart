@@ -84,6 +84,14 @@ class Compiler {
     }
     output.write("return obj;}");
 
+    output.write("""if(sSym) {
+      var symTo = Symbol.for("calzone.dynamicTo");
+      var symFrom = Symbol.for("calzone.dynamicFrom");
+
+      module.exports[symTo] = dynamicTo;
+      module.exports[symFrom] = dynamicFrom;
+    }""");
+
     children.forEach((c) {
       if(!c.data["name"].startsWith("_"))
         c.render(this, output);
