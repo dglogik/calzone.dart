@@ -115,7 +115,10 @@ class Analyzer {
       wasIterated[c.name] = true;
     }
 
-    _nodeTree[library].forEach((_, c) => iterateClass(c));
+    _nodeTree[library].forEach((_, c) {
+      if(c is Class)
+        iterateClass(c);
+    });
     overflowQueue.forEach((c) => iterateClass(c, false));
   }
 

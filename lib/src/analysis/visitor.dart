@@ -58,8 +58,7 @@ class AnalyzerVisitor extends Visitor<Map> {
       var f = node.parent;
       var c = f.parent;
 
-      if ((c is NamedExpression || c is ClassDeclaration) && c.parent is CompilationUnit) {
-        if (f is ClassMember) {
+      if (c is ClassDeclaration && c.parent is CompilationUnit && f is ClassMember) {
           if (f is MethodDeclaration && (f.isGetter || f.isSetter))
             return true;
 
@@ -70,10 +69,9 @@ class AnalyzerVisitor extends Visitor<Map> {
 
           cNode.functions[name] = [];
           node.visitChildren(new ParamVisitor(analyzer, libraryName, new Duo(cNode.functions[name], c.name.toString())));
-        } else {
-          data[c.name.toString()] = [];
-          node.visitChildren(new ParamVisitor(analyzer, libraryName, new Duo(data[c.name.toString()], null)));
-        }
+      } else if(c is FunctionDeclaration && c.parent is CompilationUnit) {
+        data[c.name.toString()] = [];
+        node.visitChildren(new ParamVisitor(analyzer, libraryName, new Duo(data[c.name.toString()], null)));
       }
 
       return true;
