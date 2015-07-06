@@ -31,6 +31,16 @@ class Compiler {
     baseTransformer = new BaseTypeTransformer(this);
   }
 
+  // used for testing
+  Compiler.empty(String dartFile):
+      info = new InfoData(null),
+      mangledNames = new MangledNames(null),
+      typeTransformers = const [],
+      isMinified = false {
+    analyzer = new Analyzer(this, dartFile);
+    baseTransformer = new BaseTypeTransformer(this);
+  }
+
   String compile(List<String> include) {
     StringBuffer output = new StringBuffer();
 
@@ -56,7 +66,7 @@ class Compiler {
         }
 
         if (type == "function" && isIncluded) {
-          var params = _getParamsFromInfo(this, childData["type"], analyzer.getFunctionParameters(library["name"], childData["name"]));
+          var params = analyzer.getFunctionParameters(library["name"], childData["name"]);
           children.add(new Func(childData, params,
               binding: "init.globalFunctions",
               prefix: "mdex",

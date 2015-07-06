@@ -47,22 +47,6 @@ class AnalyzerVisitor extends Visitor<Map> {
         }
       }
 
-      if (tree.length > 0) analyzer.buildLibrary(libraryName, false);
-
-      var copy = []..addAll(tree);
-      copy.forEach((type) {
-        var prop = analyzer.dictionary.searchForGlobalProp(type, libraryName: libraryName);
-
-        if(prop != null && analyzer._nodeTree.containsKey(prop)) {
-          var nodeTree = analyzer._nodeTree[prop];
-          if(prop == this.libraryName)
-            nodeTree = this.data;
-
-          if(nodeTree.containsKey(type))
-            tree.addAll(nodeTree[type].inheritedFrom);
-        }
-      });
-
       data[node.name.toString()] = new Class(node.name.toString(), libraryName,
           staticFields: staticFields,
           inheritedFrom: tree,
@@ -76,6 +60,9 @@ class AnalyzerVisitor extends Visitor<Map> {
 
       if ((c is NamedExpression || c is ClassDeclaration) && c.parent is CompilationUnit) {
         if (f is ClassMember) {
+          if (f is MethodDeclaration && (f.isGetter || f.isSetter))
+            return true;
+
           var cNode = data[c.name.toString()];
 
           var name = f.name.toString();
@@ -87,9 +74,9 @@ class AnalyzerVisitor extends Visitor<Map> {
           data[c.name.toString()] = [];
           node.visitChildren(new ParamVisitor(analyzer, libraryName, new Duo(data[c.name.toString()], null)));
         }
-
-        return true;
       }
+
+      return true;
     }
 
     return false;
@@ -126,12 +113,12 @@ class ParamVisitor extends Visitor<Duo<List<Parameter>, String>> {
           defaultValue = primitiveVisitor.data.key;
       }
 
-      data.key.add(new Parameter(norm.kind, norm.type.toString(),
+      data.key.add(new Parameter(norm.kind, norm.type == null ? "dynamic" : norm.type.toString(),
           norm.identifier.toString(),
           defaultValue));
     }
 
-    return false;
+    return true;
   }
 }
 
@@ -213,7 +200,11 @@ class PrimitiveVisitor extends Visitor<MutableDuo<String, String>> {
     if(node is ListLiteral) {
       data.key += "[";
 
-      node.elements.forEach((element) => visit(element));
+      node.elements.forEach((element) {
+        visit(element);
+        if(element != node.elements.last)
+          data.key += ",";
+      });
 
       data.key += "]";
       return true;
@@ -226,6 +217,8 @@ class PrimitiveVisitor extends Visitor<MutableDuo<String, String>> {
         visit(entry.key);
         data.key += ":";
         visit(entry.value);
+        if(entry != node.entries.last)
+          data.key += ",";
       });
 
       data.key += "}";

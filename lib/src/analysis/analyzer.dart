@@ -86,6 +86,37 @@ class Analyzer {
     var visitor = new AnalyzerVisitor(this, library, _nodeTree[library]);
 
     dictionary.libraries[library].astUnits.forEach((u) => u.visitChildren(visitor));
+
+    var overflowQueue = <Class>[];
+    var wasIterated = <String, bool>{};
+
+    iterateClass(Class c) {
+      if (c.inheritedFrom.length <= 0) return;
+
+      buildLibrary(c.libraryName, false);
+
+      for(var type in []..addAll(c.inheritedFrom)) {
+        var prop = dictionary.searchForGlobalProp(type, libraryName: c.libraryName);
+
+        if(prop != null && _nodeTree.containsKey(prop)) {
+          var nodeTree = _nodeTree[prop];
+
+          if(nodeTree.containsKey(type)) {
+            if(prop == c.libraryName && !wasIterated.containsKey(type)) {
+              overflowQueue.add(c);
+              return;
+            }
+
+            c.inheritedFrom.addAll(nodeTree[type].inheritedFrom);
+          }
+        }
+      }
+
+      wasIterated[c.name] = true;
+    }
+
+    _nodeTree[library].forEach((_, c) => iterateClass(c));
+    overflowQueue.forEach((c) => iterateClass(c));
   }
 
   List<Parameter> getFunctionParameters(String library, String function, [String c]) {

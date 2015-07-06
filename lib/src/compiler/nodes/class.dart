@@ -54,7 +54,7 @@ class Class implements Renderable {
                 ? "function(){}"
                 : "${compiler.mangledNames.getLibraryObject(libraryName)}.${data["code"].split(":")[0].trim()}";
             var func = this.data["name"];
-            (new Func(data, _getParamsFromInfo(compiler, data["type"], compiler.analyzer.getFunctionParameters(c.libraryName, func, memberData["name"])),
+            (new Func(data, compiler.analyzer.getFunctionParameters(c.libraryName, func, memberData["name"]),
                 code: code,
                 withSemicolon: false,
                 transform: FunctionTransformation.NONE)).render(compiler, buf);
@@ -65,7 +65,7 @@ class Class implements Renderable {
 
           if (data["kind"] == "constructor" && !isTopLevel) continue;
 
-          var params = _getParamsFromInfo(compiler, data["type"], compiler.analyzer.getFunctionParameters(c.libraryName, data["name"], memberData["name"]));
+          var params = compiler.analyzer.getFunctionParameters(c.libraryName, data["name"], memberData["name"]);
 
           if (c != null && c.getters.contains(data["name"]) && params.length == 0) {
             if (!accessors.contains(name)) accessors.add(name);

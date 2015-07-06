@@ -217,7 +217,7 @@ List<dynamic> _getTypeTree(String type) {
   return tree;
 }
 
-List<Parameter> _getParamsFromInfo(Compiler compiler, String typeStr, [List<Parameter> analyzerParams]) {
+List<Parameter> _getParamsFromInfo(Compiler compiler, String typeStr) {
   String type = _TYPE_REGEX.firstMatch(typeStr).group(1);
 
   int paramNameIndex = 1;
@@ -293,15 +293,6 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, String typeStr, [List<Para
 
     return new Parameter(kind, piece, actualName);
   }).toList();
-
-  if (analyzerParams != null) {
-    parameters.forEach((Parameter param) {
-      var matches = analyzerParams.where((p) => p.name == param.name);
-      if (matches.length > 0 && matches.first.type != ParameterKind.REQUIRED) {
-        parameters[parameters.indexOf(param)] = new Parameter(param.kind, param.type, param.name, matches.first.defaultValue);
-      }
-    });
-  }
 
   return parameters;
 }
