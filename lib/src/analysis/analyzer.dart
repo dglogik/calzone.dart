@@ -90,7 +90,7 @@ class Analyzer {
     var overflowQueue = <Class>[];
     var wasIterated = <String, bool>{};
 
-    iterateClass(Class c) {
+    iterateClass(Class c, [bool overflow = true]) {
       if (c.inheritedFrom.length <= 0) return;
 
       buildLibrary(c.libraryName, false);
@@ -102,7 +102,7 @@ class Analyzer {
           var nodeTree = _nodeTree[prop];
 
           if(nodeTree.containsKey(type)) {
-            if(prop == c.libraryName && !wasIterated.containsKey(type)) {
+            if(prop == c.libraryName && !wasIterated.containsKey(type) && overflow) {
               overflowQueue.add(c);
               return;
             }
@@ -116,7 +116,7 @@ class Analyzer {
     }
 
     _nodeTree[library].forEach((_, c) => iterateClass(c));
-    overflowQueue.forEach((c) => iterateClass(c));
+    overflowQueue.forEach((c) => iterateClass(c, false));
   }
 
   List<Parameter> getFunctionParameters(String library, String function, [String c]) {
