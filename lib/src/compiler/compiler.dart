@@ -66,7 +66,7 @@ class Compiler {
         }
 
         if (type == "function" && isIncluded) {
-          var params = analyzer.getFunctionParameters(library["name"], childData["name"]);
+          var params = _getParamsFromInfo(this, childData["type"], analyzer.getFunctionParameters(library["name"], childData["name"]));
           children.add(new Func(childData, params,
               binding: "init.globalFunctions",
               prefix: "mdex",
