@@ -53,16 +53,19 @@ describe('transformers.promise', function() {
     resolve();
   }));
 
-  assert(test.getFuture().then, "getFuture #1");
+  assert(test.getFuture().then, 'getFuture #1');
 
   test = new T.PromiseTest({
     then: function() {
+      return {
+        catch: function() {}
+      }
     },
     catch: function() {
     }
   });
 
-  assert(test.getFuture().then, "getFuture #2");
+  assert(test.getFuture().then, 'getFuture #2');
 });
 
 console.log(JSON.stringify(json));

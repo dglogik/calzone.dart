@@ -18,9 +18,10 @@ bool dart2js(List flags, String outputFile, String inputFile) {
 }
 
 Compiler compiler = new Compiler("test/lib/test.a.dart", "test/temp/index.js.info.json", "test/temp/index.scraper.json", typeTransformers: [
-  new CollectionsTransformer(true),
   new PromiseTransformer(true),
-  new ClosureTransformer()
+  new ClosureTransformer(),
+  // important that collections transformer is last
+  new CollectionsTransformer(true)
 ]);
 
 Analyzer analyzer = compiler.analyzer;
