@@ -96,11 +96,16 @@ class PromiseTest {
 
 class ClosureTest {
   final Function closure;
+  final Function closure2;
 
-  ClosureTest(this.closure);
+  ClosureTest(this.closure, this.closure2);
 
   dynamic exec() {
     return closure();
+  }
+
+  dynamic execTwo() {
+    return closure2("Hello World!");
   }
 }
 

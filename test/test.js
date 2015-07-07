@@ -70,10 +70,13 @@ describe('transformers.promise', function() {
 
 describe('transformers.closure', function() {
   var test = new T.ClosureTest(function() {
-    return "Hello World!";
+    return 'Hello World!';
+  }, function(str) {
+    return str;
   });
 
-  assert(test.exec() === "Hello World!", 'ClosureTest.exec()');
+  assert(test.exec() === 'Hello World!', 'ClosureTest.exec()');
+  assert(test.execTwo() === 'Hello World!', 'ClosureTest.execTwo()');
 });
 
 console.log(JSON.stringify(json));

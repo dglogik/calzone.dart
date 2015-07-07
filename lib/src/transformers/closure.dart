@@ -7,7 +7,7 @@ class ClosureTransformer implements StaticTypeTransformer, TypeTransformer {
   ClosureTransformer();
 
   transformToDart(Compiler compiler, StringBuffer output) {
-    output.write("""
+    output.write(r"""
       if(typeof obj === 'function') {
         var argCount = (new RegExp(/function[^]*\(([^]*)\)/))
           .exec(obj.toString())[1]
@@ -16,6 +16,9 @@ class ClosureTransformer implements StaticTypeTransformer, TypeTransformer {
             return arg.length > 0;
           })
           .length;
+    """);
+
+    output.write("""
         var returned = {};
         returned['${compiler.isMinified ? "\$" : "call\$"}' + argCount] = function() {
           var args = new Array(arguments.length);
