@@ -150,7 +150,7 @@ class InfoData extends _JSONWrapper {
     return data["elements"][type][id.toString()];
   }
 
-  List<Map<String, dynamic>> getLibraries() {
+  Iterable<Map<String, dynamic>> getLibraries() {
     return data["elements"]["library"].values;
   }
 }
@@ -174,8 +174,8 @@ class InfoParent extends _JSONWrapper {
   }
 
   String getMangledName(String child) {
-    if(children[child] == null)
-      throw children.keys;
+    if(children[child] == null || children[child]["code"] == null)
+      throw children[child];
     return children[child]["code"].split(":")[0].trim();
   }
 

@@ -31,8 +31,8 @@ class PromiseTransformer implements TypeTransformer {
   transformFromDart(Compiler compiler, StringBuffer output) {
     var promiseName = _usePolyfill ? "\$Promise" : "Promise";
     if (_usePolyfill) {
-      if (!compiler.globals.contains(_PROMISE_PREFIX)) compiler.globals
-          .add(_PROMISE_PREFIX);
+      if (!compiler.globals.contains(_PROMISE_PREFIX))
+        compiler.globals.add(_PROMISE_PREFIX);
     }
 
     var data = compiler.classes["dart.async._Future"];

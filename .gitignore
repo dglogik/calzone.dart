@@ -19,3 +19,6 @@ packages
 
 # Include when developing application packages.
 pubspec.lock
+
+test/node_modules
+test/temp

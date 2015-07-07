@@ -7,14 +7,29 @@ import "package:analyzer/analyzer.dart" show ParameterKind;
 
 import "package:calzone/analysis.dart";
 import "package:calzone/compiler.dart";
+import "package:calzone/transformers.dart";
 
 import "package:calzone/patcher.dart";
 
-Compiler emptyCompiler = new Compiler.empty("test/lib/test.a.dart");
+bool dart2js(List flags, String outputFile, String inputFile) {
+  var arguments = flags.map((flag) => "--$flag").toList();
+  arguments.addAll(["-o", outputFile, inputFile]);
+  return Process.runSync("dart2js", arguments).exitCode == 0;
+}
 
-Analyzer analyzer = emptyCompiler.analyzer;
+Compiler compiler = new Compiler("test/lib/test.a.dart", "test/temp/index.js.info.json", "test/temp/index.scraper.json", typeTransformers: [
+  new CollectionsTransformer(true),
+  new PromiseTransformer(true),
+  new ClosureTransformer()
+]);
 
-void main() {
+Analyzer analyzer = compiler.analyzer;
+
+Map<String, dynamic> nodeJson = {};
+
+main() async {
+  await setup();
+
   test("Analyzer#getClass()", () {
     expect(analyzer.getClass("calzone.test.a", "A"), isNotNull);
     expect(analyzer.getClass("calzone.test.a", "B"), isNotNull);
@@ -140,6 +155,14 @@ void main() {
     expect(types[1], equals(ParameterKind.POSITIONAL));
   });
 
+  test("CollectionsTransformer", () {
+    expect(nodeJson["transformers.collections"], equals(true));
+  });
+
+  test("PromiseTransformer", () {
+    expect(nodeJson["transformers.promise"], equals(true));
+  });
+
   group("Compiler", () {
     // TODO: Compiler
 
@@ -155,12 +178,39 @@ void main() {
 
     // TODO: Scraper
   });
+}
 
-  group("Transformers", () {
-    // TODO: Closure
+Future setup() async {
+  var temp = new Directory("test/temp");
 
-    // TODO: Collections
+  if(temp.existsSync())
+    temp.deleteSync(recursive: true);
+  temp.createSync();
 
-    // TODO: Promise
-  });
+  await dart2js(["dump-info",
+          "trust-type-annotations",
+          "trust-primitives",
+          "enable-experimental-mirrors"],
+      "test/temp/index.js",
+      "test/lib/test.a.dart");
+
+  var scraper = new Scraper("test/temp/index.js", "test/temp/index.js.info.json");
+
+  var scraperFile = new File("test/temp/index.scraper.json");
+
+  scraperFile.createSync();
+  scraperFile.writeAsStringSync(await scraper.scrape());
+
+  var str = compiler.compile(["calzone.test.a", "calzone.test.b"]);
+
+  var patcher = new Patcher("test/temp/index.js", "test/temp/index.js.info.json",
+    str.toString().split('\n'), target: PatcherTarget.NODE);
+
+  var patcherOutput = patcher.patch();
+
+  var file = new File("test/temp/index.js");
+  file.writeAsStringSync(patcherOutput);
+
+  var stdout = Process.runSync("node", ["test/test.js"]).stdout;
+  nodeJson = JSON.decode(stdout);
 }

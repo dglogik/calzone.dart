@@ -20,6 +20,7 @@ class CollectionsTransformer implements TypeTransformer {
           return dynamicTo(e);
         });
       }
+
       if(obj.constructor.name === 'Object') {
         var keys = Object.keys(obj);
         var values = [];
