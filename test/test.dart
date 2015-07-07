@@ -164,6 +164,10 @@ main() async {
     expect(nodeJson["transformers.promise"], equals(true));
   });
 
+  test("ClosureTransformer", () {
+    expect(nodeJson["transformers.closure"], equals(true));
+  });
+
   group("Compiler", () {
     // TODO: Compiler
 

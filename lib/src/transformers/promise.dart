@@ -5,8 +5,6 @@ final String _PROMISE_PREFIX =
 
 // ES6 Promise <-> Future
 class PromiseTransformer implements TypeTransformer {
-  final List<String> types = ["Future"];
-
   final bool _usePolyfill;
 
   PromiseTransformer([this._usePolyfill = false]);

@@ -4,10 +4,16 @@ import "package:calzone/compiler.dart";
 export "package:calzone/compiler.dart" show Compiler, InfoData, MangledNames;
 
 abstract class TypeTransformer {
-  List<String> get types;
-
   void transformToDart(Compiler compiler, StringBuffer output);
   void transformFromDart(Compiler compiler, StringBuffer output);
+}
+
+// for when types cannot be converted at runtime by dynamicTo/dynamicFrom
+abstract class StaticTypeTransformer implements TypeTransformer {
+  List<String> get types;
+
+  void staticTransformTo(Compiler compiler, StringBuffer output, String name, List tree);
+  void staticTransformFrom(Compiler compiler, StringBuffer output, String name, List tree);
 }
 
 class Duo<K, V> {

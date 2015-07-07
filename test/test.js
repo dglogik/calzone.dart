@@ -53,7 +53,7 @@ describe('transformers.promise', function() {
     resolve();
   }));
 
-  assert(test.getFuture().then, 'getFuture #1');
+  assert(test.getFuture().then, 'PromiseTest.getFuture() #1');
 
   test = new T.PromiseTest({
     then: function() {
@@ -65,7 +65,15 @@ describe('transformers.promise', function() {
     }
   });
 
-  assert(test.getFuture().then, 'getFuture #2');
+  assert(test.getFuture().then, 'PromiseTest.getFuture() #2');
+});
+
+describe('transformers.closure', function() {
+  var test = new T.ClosureTest(function() {
+    return "Hello World!";
+  });
+
+  assert(test.exec() === "Hello World!", 'ClosureTest.exec()');
 });
 
 console.log(JSON.stringify(json));

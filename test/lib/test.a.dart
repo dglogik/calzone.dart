@@ -33,10 +33,10 @@ class Stub {
 
 class CollectionsTest {
   // same as getList
-  List list;
+  final List list;
 
   // same as getMap
-  Map<String, List> map;
+  final Map<String, List> map;
 
   CollectionsTest(this.list, this.map);
 
@@ -83,12 +83,25 @@ class CollectionsTest {
 }
 
 class PromiseTest {
-  Future future;
+  final Future future;
 
   PromiseTest(this.future);
 
-  Future getFuture() =>
-    future.then((_) {});
+  Future getFuture() {
+    if(!(future is Future))
+      throw future.runtimeType;
+    return future.then((_) {});
+  }
+}
+
+class ClosureTest {
+  final Function closure;
+
+  ClosureTest(this.closure);
+
+  dynamic exec() {
+    return closure();
+  }
 }
 
 class A extends B {

@@ -1,6 +1,6 @@
 part of calzone.compiler;
 
-class BaseTypeTransformer implements TypeTransformer {
+class BaseTypeTransformer implements StaticTypeTransformer, TypeTransformer {
   final List<String> types = [];
   final Compiler _compiler;
 
@@ -22,19 +22,45 @@ class BaseTypeTransformer implements TypeTransformer {
     tree = _getTypeTree(tree);
     if (tree is String) tree = [tree];
 
-    var type = tree[0];
-    if (PRIMITIVES.contains(type)) return;
-
-    output.write("$name = dynamicTo($name);");
+    staticTransformTo(_compiler, output, name, tree);
   }
 
   transformFrom(StringBuffer output, String name, tree) {
     tree = _getTypeTree(tree);
     if (tree is String) tree = [tree];
 
+    staticTransformFrom(_compiler, output, name, tree);
+  }
+
+  @override
+  staticTransformTo(Compiler compiler, StringBuffer output, String name, List tree) {
     var type = tree[0];
     if (PRIMITIVES.contains(type)) return;
 
-    output.write("$name = dynamicFrom($name);");
+    var list = compiler.typeTransformers.where((t) => t is StaticTypeTransformer && t.types.contains(type));
+
+    if(list.length > 0) {
+      if(list.length > 1)
+        throw new Error("1+ static type transformer assigned to the same type");
+      list.first.staticTransformTo(compiler, output, name, tree);
+    } else {
+      output.write("$name = dynamicTo($name);");
+    }
+  }
+
+  @override
+  staticTransformFrom(Compiler compiler, StringBuffer output, String name, List tree) {
+    var type = tree[0];
+    if (PRIMITIVES.contains(type)) return;
+
+    var list = compiler.typeTransformers.where((t) => t is StaticTypeTransformer && t.types.contains(type));
+
+    if(list.length > 0) {
+      if(list.length > 1)
+        throw new Error("1+ static type transformer assigned to the same type");
+      list.first.staticTransformFrom(compiler, output, name, tree);
+    } else {
+      output.write("$name = dynamicFrom($name);");
+    }
   }
 }

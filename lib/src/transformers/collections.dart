@@ -4,8 +4,6 @@ final String _MAP_PREFIX = "var \$Map = require('es6-map');";
 
 // ES6-like Maps and Objects to Dart Maps, Arrays to Lists
 class CollectionsTransformer implements TypeTransformer {
-  final List<String> types = ["Map", "List"];
-
   final bool _usePolyfill;
 
   CollectionsTransformer([this._usePolyfill = false]);
