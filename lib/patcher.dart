@@ -220,7 +220,7 @@ class Patcher {
         }
 
         if (line.startsWith("$main:")) {
-          data.replaceRange(index, index + 4, ["Q:[function(a){},\"\$1\",\"ao\",2,0,279],"]);
+          data.replaceRange(index, index + 7, ["$main:[function(a){},\"\$1\",\"ao\",2,0,279],"]);
           foundMain = true;
           if(foundMain && foundTypeCheck)
             break;
@@ -242,7 +242,7 @@ class Patcher {
         }
 
         if (line.contains("main: [function(args) {")) {
-          data.removeRange(index + 1, index + 5);
+          data.removeRange(index + 1, index + 8);
           foundMain = true;
           if(foundMain && foundTypeCheck)
             break;

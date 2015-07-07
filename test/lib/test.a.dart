@@ -108,10 +108,9 @@ class B extends C {
 }
 
 main(List<String> args) {
-  var a = " ";
-  a += args.length;
+  var a = new Symbol(args.length.toString());
 
   reflectClass(a).getField(a);
   reflectClass(a).invoke(a, []);
-  currentMirrorSystem().getSymbol(a);
+  currentMirrorSystem().findLibrary(a).getField(a);
 }
