@@ -1,8 +1,5 @@
 library calzone.test.a;
 
-import "dart:async";
-import "dart:collection";
-
 @MirrorsUsed(
     targets: const [
   "calzone.test.a",
@@ -12,6 +9,9 @@ import "dart:collection";
   "dart.collection.LinkedHashMap"
 ])
 import "dart:mirrors";
+import "dart:async";
+import "dart:collection";
+import "dart:typed_data";
 
 import "test.b.dart";
 
@@ -107,6 +107,32 @@ class ClosureTest {
   dynamic execTwo() {
     return closure2("Hello World!");
   }
+}
+
+class ClassTest {
+  ClassTest();
+
+  String invoke() {
+    return "Hello World!";
+  }
+}
+
+class ClassWrapperTest {
+  final ClassTest c;
+
+  ClassWrapperTest(this.c);
+
+  String invoke() =>
+    c.invoke();
+}
+
+class BufferTest {
+  final ByteData data;
+
+  BufferTest(this.data);
+
+  ByteData getData() =>
+    new ByteData.view(data.buffer);
 }
 
 class A extends B {

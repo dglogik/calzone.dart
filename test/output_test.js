@@ -79,4 +79,42 @@ describe('transformers.closure', function() {
   assert(test.execTwo() === 'Hello World!', 'ClosureTest.execTwo()');
 });
 
+describe('transformers.buffer', function() {
+  var buffer = new Buffer([1,2,3]);
+  var test = new T.BufferTest(buffer);
+
+  var newBuffer = test.getData();
+  assert(newBuffer instanceof Buffer);
+  assert(newBuffer.length === 3);
+  assert(newBuffer[0] === 1);
+  assert(newBuffer[1] === 2);
+  assert(newBuffer[2] === 3);
+});
+
+describe('transformers.base', function() {
+  var test = new T.ClassWrapperTest(new T.ClassTest());
+
+  assert(test.invoke() === "Hello World!");
+  assert(test.c.invoke() === "Hello World!");
+});
+
+describe('inheritance', function() {
+  var _super = T.ClassTest.class;
+
+  function InheritanceTest() {
+    _super.call(this);
+  }
+
+  InheritanceTest.prototype = Object.create(_super.prototype);
+
+  InheritanceTest.prototype.invoke = function() {
+    return "Salutations, human.";
+  };
+
+  var test = new T.ClassWrapperTest(new InheritanceTest());
+
+  assert(test.invoke() === "Salutations, human.");
+  assert(test.c.invoke() === "Salutations, human.");
+});
+
 console.log(JSON.stringify(json));
