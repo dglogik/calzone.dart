@@ -75,7 +75,7 @@ class Builder {
         isMinified: isMinified);
 
       var str = compiler.compile(include);
-      str = onWrapperGenerated(str);
+      str = await onWrapperGenerated(str);
 
       var patcher = new Patcher("$directory/index.js", "$directory/index.js.info.json",
         str.toString().split('\n'),
@@ -88,7 +88,7 @@ class Builder {
     return "";
   }
 
-  String onWrapperGenerated(String wrapper) {
+  Future<String> onWrapperGenerated(String wrapper) async {
     return wrapper;
   }
 }
