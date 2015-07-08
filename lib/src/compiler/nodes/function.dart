@@ -58,15 +58,14 @@ class Func implements Renderable {
 
       var fullParamString = parameters.map((p) => p.name).join(",");
 
-      StringBuffer tOutput = new StringBuffer();
 
       var returnType = _TYPE_REGEX.firstMatch(data["type"]).group(2);
-      if (transform == FunctionTransformation.NORMAL) compiler.baseTransformer.transformFrom(tOutput, "returned", returnType);
-      else if (transform == FunctionTransformation.REVERSED) compiler.baseTransformer.transformTo(tOutput, "returned", returnType);
+      compiler.baseTransformer.handleReturn(output,
+          "($code).call($_binding${fullParamString.length > 0 ? "," : ""}$fullParamString)",
+          returnType,
+          transform: transform);
 
-      output.write(tOutput.length > 0 ? "var returned = " : "return ");
-      output.write("($code).call($_binding${fullParamString.length > 0 ? "," : ""}$fullParamString);");
-      output.write(tOutput.length > 0 ? tOutput.toString() + "return returned;}" : "}");
+      output.write("}");
 
       if (_withSemicolon) output.write(";");
     }

@@ -86,18 +86,38 @@ init.libraries.forEach(function(elm) {
 console.log(JSON.stringify(map));
 """;
 
-var _NODE_PREAMBLE = """
+var _NODE_PREAMBLE = r"""
+
 global.location = { href: "file://" + process.cwd() + "/" };
 global.scheduleImmediate = setImmediate;
 global.self = global;
 global.require = require;
 global.process = process;
 
-global.dartMainRunner = function(main, args) {
-  main(args.slice(Math.min(args.length, 2)));
+function computeCurrentScript() {
+  try {
+    throw new Error();
+  } catch(e) {
+    var stack = e.stack;
+    var re = new RegExp("^ *at [^(]*\\((.*):[0-9]*:[0-9]*\\)$", "mg");
+    var lastMatch = null;
+    do {
+      var match = re.exec(stack);
+      if (match != null) lastMatch = match;
+    } while (match != null);
+    return lastMatch[1];
+  }
+}
+
+var cachedCurrentScript = null;
+global.document = { get currentScript() {
+    if (cachedCurrentScript == null) {
+      cachedCurrentScript = {src: computeCurrentScript()};
+    }
+    return cachedCurrentScript;
+  }
 };
 
-// Support for deferred loading.
 global.dartDeferredLibraryLoader = function(uri, successCallback, errorCallback) {
   try {
     load(uri);

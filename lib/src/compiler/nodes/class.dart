@@ -124,9 +124,11 @@ class Class implements Renderable {
 
             if (data["name"].startsWith("_")) continue;
 
-            prototype.write("get ${data["name"]}() { var returned = this[clOb].$mangledName;");
-            compiler.baseTransformer.transformFrom(prototype, "returned", data["type"]);
-            prototype.write("return returned;},set ${data["name"]}(v) {");
+            prototype.write("get ${data["name"]}() {");
+
+            compiler.baseTransformer.handleReturn(prototype, "this[clOb].$mangledName", data["type"]);
+
+            prototype.write("},set ${data["name"]}(v) {");
             compiler.baseTransformer.transformTo(prototype, "v", data["type"]);
             prototype.write("this[clOb].$mangledName = v;},");
           } else {
@@ -141,14 +143,17 @@ class Class implements Renderable {
       for (var accessor in accessors) {
         if (getters[accessor] != null) {
           prototype.write("get $accessor() {");
-          prototype.write("var returned = (");
+
+          var pOutput = new StringBuffer();
+          pOutput.write("(");
           (new Func(getters[accessor], _getParamsFromInfo(compiler, getters[accessor]["type"]),
               binding: "this[clOb]",
               transform: FunctionTransformation.NONE,
-              withSemicolon: false)).render(compiler, prototype);
-          prototype.write(").apply(this, arguments);");
-          compiler.baseTransformer.transformFrom(prototype, "returned", getters[accessor]["type"]);
-          prototype.write("return returned;},");
+              withSemicolon: false)).render(compiler, pOutput);
+          pOutput.write(").apply(this, arguments)");
+
+          compiler.baseTransformer.handleReturn(prototype, pOutput.toString(), getters[accessor]["type"]);
+          prototype.write("},");
         }
 
         if (setters[accessor] != null) {
