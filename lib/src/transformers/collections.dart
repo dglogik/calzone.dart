@@ -31,6 +31,26 @@ class CollectionsTransformer implements TypeTransformer {
         map.\$builtinTypeInfo = [${compiler.mangledNames.getLibraryObject("dart.core")}.${compiler.mangledNames.getClassName("dart.core", "String")}, null];
         return map;
       }
+
+      // effectively a ES6 Map
+      if(obj.forEach
+          && obj.get
+          && obj.has
+          && obj.set
+          && obj.keys
+          && obj.values) {
+        var keys = [];
+        var values = [];
+
+        obj.forEach(function(value, key) {
+          keys.push(dynamicTo(key));
+          values.push(dynamicTo(value));
+        });
+
+        var map = new ${mangledNames.getLibraryObject("dart.collection")}.$constructor(keys, values);
+        map.\$builtinTypeInfo = [null, null];
+        return map;
+      }
     """);
   }
 

@@ -4,23 +4,8 @@ import "dart:convert";
 
 import "package:test/test.dart";
 
-import "package:calzone/compiler.dart";
 import "package:calzone/transformers.dart";
-import "package:calzone/patcher.dart";
-
-bool dart2js(List flags, String outputFile, String inputFile) {
-  var arguments = flags.map((flag) => "--$flag").toList();
-  arguments.addAll(["-o", outputFile, inputFile]);
-  return Process.runSync("dart2js", arguments).exitCode == 0;
-}
-
-Compiler compiler = new Compiler("test/lib/test.a.dart", "test/temp/index.js.info.json", "test/temp/index.scraper.json", typeTransformers: [
-  new PromiseTransformer(true),
-  new ClosureTransformer(),
-  new BufferTransformer(),
-  // important that collections transformer is last
-  new CollectionsTransformer(true)
-]);
+import "package:calzone/builder.dart";
 
 Map<String, dynamic> nodeJson = {};
 
@@ -53,34 +38,19 @@ main() async {
 }
 
 Future setup() async {
-  var temp = new Directory("test/temp");
-
-  if(temp.existsSync())
-    temp.deleteSync(recursive: true);
-  temp.createSync();
-
-  await dart2js(["dump-info",
-          "trust-primitives",
-          "enable-experimental-mirrors"],
-      "test/temp/index.js",
-      "test/lib/test.a.dart");
-
-  var scraper = new Scraper("test/temp/index.js", "test/temp/index.js.info.json");
-
-  var scraperFile = new File("test/temp/index.scraper.json");
-
-  scraperFile.createSync();
-  scraperFile.writeAsStringSync(await scraper.scrape());
-
-  var str = compiler.compile(["calzone.test.a", "calzone.test.b"]);
-
-  var patcher = new Patcher("test/temp/index.js", "test/temp/index.js.info.json",
-    str.toString().split('\n'), target: PatcherTarget.NODE);
-
-  var patcherOutput = patcher.patch();
+  var builder = new Builder("test/lib/test.a.dart", ["calzone.test.a", "calzone.test.b"],
+      typeTransformers: [
+        new PromiseTransformer(true),
+        new ClosureTransformer(),
+        new BufferTransformer(),
+        // important that collections transformer is last
+        new CollectionsTransformer(true)
+      ],
+      directory: "test/temp",
+      isMinified: false);
 
   var file = new File("test/temp/index.js");
-  file.writeAsStringSync(patcherOutput);
+  file.writeAsStringSync(await builder.build());
 
   var stdout = Process.runSync("node", ["test/output_test.js"]).stdout;
   nodeJson = JSON.decode(stdout);
