@@ -1,6 +1,13 @@
 part of calzone.transformers;
 
-// node.js Buffer (or Browserify equivelent) to ByteData, and back.
+/**
+ * A transformer that handles convertions between Dart's ByteData class
+ * and Buffer from node.js.
+ *
+ * To use this transformer, you need to import "dart:typed_data" into
+ * your stub file, and "dart.typed_data.ByteData" to your @MirrorsUsed
+ * declaration.
+ */
 class BufferTransformer implements TypeTransformer {
   BufferTransformer();
 

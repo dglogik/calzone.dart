@@ -3,7 +3,17 @@ part of calzone.transformers;
 final String _PROMISE_PREFIX =
     "var \$Promise = typeof(Promise) !== 'undefined' ? Promise : require('es6-promises');";
 
-// ES6 Promise <-> Future
+/**
+ * A transformer that handles converting between Dart's Future and Promises.
+ *
+ * To use this transformer, you need to import "dart:async" into your stub file,
+ * and add "dart.async.Completer" and "dart.async.Future", to your @MirrorsUsed
+ * declaration.
+ *
+ * If a bool is provided to this class's constructor, you need to
+ * be using a CommonJS/npm environment with the es6-promises package in your
+ * package.json.
+ */
 class PromiseTransformer implements TypeTransformer {
   final bool _usePolyfill;
 

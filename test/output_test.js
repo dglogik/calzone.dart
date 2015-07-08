@@ -108,8 +108,8 @@ describe('transformers.buffer', function() {
 describe('transformers.base', function() {
   var test = new T.ClassWrapperTest(new T.ClassTest());
 
-  assert(test.invoke() === "Hello World!");
-  assert(test.c.invoke() === "Hello World!");
+  assert(test.invoke() === 'Hello World!');
+  assert(test.c.invoke() === 'Hello World!');
 });
 
 describe('inheritance', function() {
@@ -122,13 +122,19 @@ describe('inheritance', function() {
   InheritanceTest.prototype = Object.create(_super.prototype);
 
   InheritanceTest.prototype.invoke = function() {
-    return "Salutations, human.";
+    return 'Salutations, human.';
   };
 
   var test = new T.ClassWrapperTest(new InheritanceTest());
 
-  assert(test.invoke() === "Salutations, human.");
-  assert(test.c.invoke() === "Salutations, human.");
+  assert(test.invoke() === 'Salutations, human.');
+  assert(test.c.invoke() === 'Salutations, human.');
+});
+
+describe('default_values', function() {
+  var test = new T.B();
+
+  assert(test.d() === 'Hello World!false2.55');
 });
 
 console.log(JSON.stringify(json));

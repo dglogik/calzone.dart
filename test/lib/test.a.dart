@@ -17,17 +17,13 @@ import "test.b.dart";
 
 part "test.a.part.dart";
 
-class Stub {
-  final LinkedHashMap map;
+class CollectionsStub {
+  final LinkedHashMap _map;
 
-  Stub(this.map);
+  CollectionsStub(this._map);
 
-  getKeys() {
-    return map.keys;
-  }
-
-  getValues() {
-    return map.values;
+  List getMap() {
+    return [_map.keys, _map.values];
   }
 }
 
@@ -144,7 +140,10 @@ class B extends C {
   c() {
   }
 
-  d(String hello, hello2, {String hi, String string: "Hello World!", bool boolean: false, num number: 2.55}) {
+  String d(String hello, hello2, {String hi, String string: "Hello World!", bool boolean: false, num number: 2.55}) {
+    if(string != "Hello World!" || boolean != false || number != 2.55)
+      throw new StateError("defaults didn't work");
+    return string + boolean.toString() + number.toString();
   }
 
   e([Map map = const {"1": 1, "2": 2, "3": 3}, List list = const [1, 2, 3]]) {

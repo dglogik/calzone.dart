@@ -3,6 +3,11 @@ library calzone.util;
 import "package:calzone/compiler.dart";
 export "package:calzone/compiler.dart" show Compiler, InfoData, MangledNames;
 
+/**
+ * TypeTransformer is a class that handles dynamically converting one type to
+ * another type at runtime. Please use the calzone.transformers package right
+ * now for examples on how to use transformers.
+ */
 abstract class TypeTransformer {
   void transformToDart(Compiler compiler, StringBuffer output);
   void transformFromDart(Compiler compiler, StringBuffer output);

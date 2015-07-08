@@ -35,16 +35,20 @@ main() async {
   test("Inheritance", () {
     expect(nodeJson["inheritance"], equals(true));
   });
+
+  test("Default Values", () {
+    expect(nodeJson["default_values"], equals(true));
+  });
 }
 
 Future setup() async {
   var builder = new Builder("test/lib/test.a.dart", ["calzone.test.a", "calzone.test.b"],
       typeTransformers: [
-        new PromiseTransformer(true),
+        new PromiseTransformer(),
         new ClosureTransformer(),
         new BufferTransformer(),
         // important that collections transformer is last
-        new CollectionsTransformer(true)
+        new CollectionsTransformer()
       ],
       directory: "test/temp",
       isMinified: false);

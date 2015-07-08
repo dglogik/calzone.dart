@@ -1,6 +1,9 @@
 part of calzone.transformers;
 
-// Closure transformer to Dart closures
+/**
+ * A transformer that will convert a JavaScript function to a closure used by
+ * dart2js. This transformer requires no changes to your stub file.
+ */
 class ClosureTransformer implements StaticTypeTransformer, TypeTransformer {
   final List<String> types = ["Function"];
 

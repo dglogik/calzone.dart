@@ -50,9 +50,11 @@ class Class implements Renderable {
             var buf = isDefault ? constructor : global;
             if (!isDefault) global.write("mdex.${this.data["name"]}.$name = function() {");
             buf.write("var __obj__ = (");
+
             var code = data["code"] == null || data["code"].length == 0
                 ? "function(){}"
                 : "${compiler.mangledNames.getLibraryObject(libraryName)}.${data["code"].split(":")[0].trim()}";
+
             var func = this.data["name"];
             (new Func(data, _getParamsFromInfo(compiler, data["type"], compiler.analyzer.getFunctionParameters(c.libraryName, func, memberData["name"])),
                 code: code,
@@ -177,7 +179,7 @@ class Class implements Renderable {
               isTopLevel: false);
       });
 
-    output.write("mdex.$name = function $name() {");
+    output.write("mdex.$name = function() {");
     output.write(constructor.toString());
 
     output.write("this[clOb] = __obj__;");

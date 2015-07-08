@@ -2,7 +2,28 @@ part of calzone.transformers;
 
 final String _MAP_PREFIX = "var \$Map = require('es6-map');";
 
-// ES6-like Maps and Objects to Dart Maps, Arrays to Lists
+/**
+ * A transformer that handles converting JavaScript Arrays, plain Objects, and
+ * ES6 Maps to Dart Lists and Maps.
+ *
+ * To use this transformer, you need to import "dart:collection" into
+ * your stub file, and "dart.collection.LinkedHashMap" to your @MirrorsUsed
+ * declaration. You may also need to add the following class to your stub file.
+ *
+ * ```
+ * class CollectionsStub {
+ *   final LinkedHashMap _map;
+ *   CollectionsStub(this._map);
+ *   List getMap() {
+ *     return [_map.keys, _map.values];
+ *   }
+ * }
+ * ```
+ *
+ * If a bool is provided to this class's constructor, you need to
+ * be using a CommonJS/npm environment with the es6-map package in your
+ * package.json.
+ */
 class CollectionsTransformer implements TypeTransformer {
   final bool _usePolyfill;
 
