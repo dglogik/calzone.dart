@@ -18,16 +18,30 @@ function describe(id, cb) {
 describe('transformers.collections', function() {
   var list = ['a', 'b', {'a': 1, 'b': 2}];
   var map = {
-    'a': [1, {
+    a: [1, {
         'c': 3,
         'd': 4
       }],
-    'b': 2
+    b: 2
   };
 
   var test = new T.CollectionsTest(list, map);
 
   assert(test.verifyList());
+  assert(test.verifyMap());
+
+  // ES6 Map
+  map = new Map();
+
+  var submap = new Map();
+  submap.set('c', 3);
+  submap.set('d', 4);
+
+  map.set('a', [1, submap]);
+  map.set('b', 2);
+
+  test = new T.CollectionsTest(list, map);
+
   assert(test.verifyMap());
 
   list = test.getList();

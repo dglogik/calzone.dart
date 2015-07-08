@@ -39,10 +39,11 @@ class BaseTypeTransformer implements StaticTypeTransformer, TypeTransformer {
 
     var list = compiler.typeTransformers.where((t) => t is StaticTypeTransformer && t.types.contains(type));
 
-    if(list.length > 0) {
-      if(list.length > 1)
-        throw new Error("1+ static type transformer assigned to the same type");
-      list.first.staticTransformTo(compiler, output, name, tree);
+    StringBuffer buf = new StringBuffer();
+    list.forEach((t) => t.staticTransformTo(compiler, buf, name, tree));
+
+    if(buf.length > 0) {
+      output.write(buf.toString());
     } else {
       output.write("$name = dynamicTo($name);");
     }
@@ -55,10 +56,11 @@ class BaseTypeTransformer implements StaticTypeTransformer, TypeTransformer {
 
     var list = compiler.typeTransformers.where((t) => t is StaticTypeTransformer && t.types.contains(type));
 
-    if(list.length > 0) {
-      if(list.length > 1)
-        throw new Error("1+ static type transformer assigned to the same type");
-      list.first.staticTransformFrom(compiler, output, name, tree);
+    StringBuffer buf = new StringBuffer();
+    list.forEach((t) => t.staticTransformFrom(compiler, buf, name, tree));
+
+    if(buf.length > 0) {
+      output.write(buf.toString());
     } else {
       output.write("$name = dynamicFrom($name);");
     }

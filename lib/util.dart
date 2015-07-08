@@ -9,7 +9,7 @@ abstract class TypeTransformer {
 }
 
 // for when types cannot be converted at runtime by dynamicTo/dynamicFrom
-abstract class StaticTypeTransformer implements TypeTransformer {
+abstract class StaticTypeTransformer {
   List<String> get types;
 
   void staticTransformTo(Compiler compiler, StringBuffer output, String name, List tree);
