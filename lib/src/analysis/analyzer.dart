@@ -46,8 +46,8 @@ class Dictionary {
     return null;
   }
 
-  crawl(String path) {
-    var libs = _crawler(path);
+  crawl(String path, [bool deep = false]) {
+    var libs = _crawler.crawl(path, deep);
     imports[libs.first.name] = libs;
     libs.forEach((library) {
       if(libraries.containsKey(library.name))
@@ -76,7 +76,7 @@ class Analyzer {
     if (!dictionary.libraries.containsKey(library) || _nodeTree.containsKey(library)) return;
 
     var libPath = dictionary.libraries[library].path;
-    dictionary.crawl(libPath);
+    dictionary.crawl(libPath, dictionary.libraries[library].name.startsWith("dart."));
 
     if (!deep) {
       dictionary.imports[library].forEach((lib) => buildLibrary(lib.name, true));
