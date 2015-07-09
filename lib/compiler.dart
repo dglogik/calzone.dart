@@ -80,7 +80,9 @@ final String _OVERRIDE_PREFIX = """
   var clOb = sSym ? Symbol.for("calzone.obj") : "__obj__";
   var clCl = sSym ? Symbol.for("calzone.constructor") : "_";
 
-  function overrideFunc(cl, name, mangledName) {
+  function overrideFunc(cl, proto, name, mangledName) {
+    if(cl[name] === proto[name])
+      return;
     cl[clOb][mangledName] = function() {
       var args = new Array(arguments.length);
       var length = args.length;

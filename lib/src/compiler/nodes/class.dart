@@ -108,7 +108,7 @@ class Class implements Renderable {
 
               var dartName = data["code"].split(":")[0];
 
-              buf.write("if(proto.indexOf('$name') > -1) { overrideFunc(this, '$name', '$dartName'); }");
+              buf.write("overrideFunc(this, proto, '$name', '$dartName');");
             }
           }
         }
@@ -199,10 +199,11 @@ class Class implements Renderable {
     output.write("mdex.$name.prototype[clIw] = true;");
 
     output.write("""
-    mdex.$name.class = obfr(function() {
+    mdex.$name.class = function() {
         function $name() {
           mdex.$name.apply(this, arguments);
-          var proto = Object.keys(Object.getPrototypeOf(this));
+
+          var proto = mdex.$name.prototype;
     """);
 
     methods.forEach((method) => output.write(method.toString()));
@@ -214,7 +215,7 @@ class Class implements Renderable {
         $name.prototype["constructor"] = $name;
 
         return $name;
-    }());
+    }();
     """);
 
     output.write(global.toString());

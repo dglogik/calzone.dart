@@ -44,12 +44,20 @@ class Func implements Renderable {
         if (param.kind == ParameterKind.NAMED) output
             .write("var $name = _optObj_.$name === void 0 ? ${param.defaultValue} : _optObj_.$name;");
 
-        if (param.kind != ParameterKind.REQUIRED) output.write("if($name !== null) {");
+        StringBuffer tOutput = new StringBuffer();
 
-        if (transform != FunctionTransformation.REVERSED) compiler.baseTransformer.transformTo(output, name, declaredType);
-        else compiler.baseTransformer.transformFrom(output, name, declaredType);
+        if (transform != FunctionTransformation.REVERSED) compiler.baseTransformer.transformTo(tOutput, name, declaredType);
+        else compiler.baseTransformer.transformFrom(tOutput, name, declaredType);
 
-        if (param.kind != ParameterKind.REQUIRED) output.write("}");
+        if(tOutput.length > 0) {
+          if(param.kind != ParameterKind.REQUIRED) {
+            output.write("if($name !== null) {");
+            output.write(tOutput.toString());
+            output.write("}");
+          } else {
+            output.write(tOutput.toString());
+          }
+        }
       }
 
       code = _code != null
