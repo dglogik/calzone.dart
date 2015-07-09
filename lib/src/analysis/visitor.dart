@@ -54,7 +54,7 @@ class AnalyzerVisitor extends Visitor<Map> {
           setters: setters);
     }
 
-    if(node is FormalParameterList) {
+    if(node is FormalParameterList && !libraryName.startsWith("dart.")) {
       var f = node.parent;
       var c = f.parent;
 
