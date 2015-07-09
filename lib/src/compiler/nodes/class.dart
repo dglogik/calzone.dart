@@ -48,8 +48,8 @@ class Class implements Renderable {
           if (data["kind"] == "constructor" && isTopLevel) {
             var isDefault = name.length == 0;
             var buf = isDefault ? constructor : global;
-            if (!isDefault) global.write("mdex.${this.data["name"]}.$name = function() {");
-            buf.write("var __obj__ = (");
+            if (!isDefault) buf.write("mdex.${this.data["name"]}.$name = function() {");
+            buf.write(!isDefault ? "return mdex.${this.data["name"]}._(" : "this[clOb] = ");
 
             var code = data["code"] == null || data["code"].length == 0
                 ? "function(){}"
@@ -60,8 +60,8 @@ class Class implements Renderable {
                 code: code,
                 withSemicolon: false,
                 transform: FunctionTransformation.NONE)).render(compiler, buf);
-            buf.write(").apply(this, arguments);");
-            if (!isDefault) global.write("return mdex.${this.data["name"]}._(__obj__);};");
+            buf.write(".apply(this, arguments)");
+            buf.write(!isDefault ? ");};" : ";");
             continue;
           }
 
@@ -186,9 +186,6 @@ class Class implements Renderable {
 
     output.write("mdex.$name = function() {");
     output.write(constructor.toString());
-
-    output.write("this[clOb] = __obj__;");
-
     output.write("};");
 
     var proto = prototype.toString();

@@ -131,6 +131,12 @@ class BufferTest {
     new ByteData.view(data.buffer);
 }
 
+class ConstructorTest {
+  final String hello;
+
+  ConstructorTest.world([this.hello = "world"]);
+}
+
 class A extends B {
   static final String stat = "Hello World!";
   static final String _stat = "Hello World!";
