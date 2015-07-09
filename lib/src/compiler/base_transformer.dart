@@ -1,4 +1,4 @@
-part of calzone._compiler;
+part of calzone.compiler;
 
 class BaseTypeTransformer implements TypeTransformer {
   final Compiler _compiler;

@@ -190,6 +190,27 @@ class InfoParent extends _JSONWrapper {
     }
     return conditionals.join(" && ");
   }
+
+  String getField(String name, Class c, List<String> fields) {
+    if(fields.length == 0)
+      throw fields;
+
+    String value = "";
+    int index = 0;
+
+    var childValues = children.values.where((v) => v["kind"] == "field" && !c.staticFields.contains(v["name"]));
+    for(var child in childValues) {
+      if(child["name"] == name) {
+        value = fields[index];
+        break;
+      }
+      index++;
+    }
+
+    if(value.length == 0)
+      throw childValues.length;
+    return value;
+  }
 }
 
 class Parameter {

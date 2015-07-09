@@ -24,7 +24,7 @@ var map = {
   libraries: {}
 };
 
-var regex = new RegExp("[A-Za-z_]+", "g");
+var regex = new RegExp("[A-Za-z_]+(?=[^:A-Za-z]|$),*", "g");
 
 var staticFields = typeof(Isolate) !== "undefined" ? Isolate.$isolateProperties : I.p;
 var staticFieldKeys = Object.keys(staticFields);
@@ -53,14 +53,14 @@ init.libraries.forEach(function(elm) {
 
     if(Array.isArray(elm)) {
       elm.forEach(function(name) {
-        if(init.allClasses[name] && init.mangledGlobalNames[name]) {
-          library.names[init.mangledGlobalNames[name]] = {
+        if(init.allClasses[name]) {
+          library.names[init.mangledGlobalNames[name] || name] = {
             name: name,
             fields: init.allClasses[name]['$__fields__'],
           };
 
           if(init.statics[name] && init.statics[name]['^']) {
-            var names = init.statics[name]['^'];
+            var names = init.statics[name]['^'].split(';')[1];
 
             var field = regex.exec(names);
             while(field != null) {

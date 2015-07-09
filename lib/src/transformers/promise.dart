@@ -21,7 +21,13 @@ class PromiseTransformer implements TypeTransformer {
 
   transformToDart(Compiler compiler, StringBuffer output) {
     var mangledNames = compiler.mangledNames;
+    var classData = compiler.classes["dart.async._Completer"];
     var data = compiler.classes["dart.async._SyncCompleter"];
+
+    var future = classData.key.getField("future",
+        compiler.analyzer.getClass("dart.async", "Completer"),
+        mangledNames.getClassFields("dart.async", compiler.isMinified
+            ? "Pf" : "_Completer"));
 
     output.write("""
       if(obj && typeof(obj.then) === 'function' && typeof(obj.catch) === 'function') {
@@ -31,7 +37,7 @@ class PromiseTransformer implements TypeTransformer {
         }).catch(function(err) {
           completer.${data.key.getMangledName("_completeError")}(err);
         });
-        return completer.future;
+        return completer.$future;
       }
     """);
   }

@@ -51,7 +51,7 @@ Future setup() async {
         new CollectionsTransformer()
       ],
       directory: "test/temp",
-      isMinified: false);
+      isMinified: true);
 
   var file = new File("test/temp/index.js");
   file.writeAsStringSync(await builder.build());

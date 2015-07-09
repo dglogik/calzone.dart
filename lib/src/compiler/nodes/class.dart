@@ -125,10 +125,10 @@ class Class implements Renderable {
             if (data["name"].startsWith("_")) continue;
 
             prototype.write("get ${data["name"]}() {");
-
             compiler.baseTransformer.handleReturn(prototype, "this[clOb].$mangledName", data["type"]);
+            prototype.write("},");
 
-            prototype.write("},set ${data["name"]}(v) {");
+            prototype.write("set ${data["name"]}(v) {");
             compiler.baseTransformer.transformTo(prototype, "v", data["type"]);
             prototype.write("this[clOb].$mangledName = v;},");
           } else {
