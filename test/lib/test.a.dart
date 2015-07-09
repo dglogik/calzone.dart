@@ -106,10 +106,12 @@ class ClosureTest {
 }
 
 class ClassTest {
+  String get str => "Hello World!";
+
   ClassTest();
 
   String invoke() {
-    return "Hello World!";
+    return str;
   }
 }
 

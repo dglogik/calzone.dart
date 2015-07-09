@@ -164,12 +164,11 @@ class Class implements Renderable {
               binding: "this[clOb]",
               withSemicolon: false)).render(compiler, prototype);
           prototype.write(").call(this, v);},");
-        } /* TODO: Reevaluate usefulness of this
-          else if (getters[accessor] != null) {
+        } else if (getters[accessor] != null) {
           prototype.write("set $accessor(v) {");
           compiler.baseTransformer.transformTo(prototype, "v", getters[accessor]["type"]);
           prototype.write("this[clOb].${getters[accessor]['code'].split(':')[0]} = function() { return v; };},");
-        } */
+        }
       }
     }
 

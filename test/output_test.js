@@ -129,6 +129,13 @@ describe('inheritance', function() {
 
   assert(test.invoke() === 'Salutations, human.');
   assert(test.c.invoke() === 'Salutations, human.');
+
+  InheritanceTest.prototype.invoke = function() {
+    return this.str;
+  };
+
+  assert(test.invoke() === 'Hello World!');
+  assert(test.c.invoke() === 'Hello World!');
 });
 
 describe('default_values', function() {
