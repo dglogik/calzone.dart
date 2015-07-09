@@ -83,7 +83,7 @@ class BaseTypeTransformer implements TypeTransformer {
 
   handleReturn(StringBuffer output, String code, tree, {FunctionTransformation transform: FunctionTransformation.NORMAL}) {
     if(transform == FunctionTransformation.NONE) {
-      output.write("return ($code);");
+      output.write("return $code;");
       return;
     }
 
@@ -101,12 +101,12 @@ class BaseTypeTransformer implements TypeTransformer {
         : _transformTo(tOutput, "returned", tree);
 
     if(shouldTransform) {
-      output.write("var returned = ($code);");
+      output.write("var returned = $code;");
       output.write(tOutput.toString());
       output.write("return returned;");
     } else {
       if (PRIMITIVES.contains(type)) {
-        output.write("return ($code);");
+        output.write("return $code;");
         return;
       }
 

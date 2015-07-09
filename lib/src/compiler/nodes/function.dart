@@ -40,9 +40,9 @@ class Func implements Renderable {
         var name = param.name;
         var declaredType = param.type;
 
-        if (param.kind == ParameterKind.POSITIONAL) output.write("$name = typeof($name) === 'undefined' ? ${param.defaultValue} : $name;");
+        if (param.kind == ParameterKind.POSITIONAL) output.write("$name = $name === void 0 ? ${param.defaultValue} : $name;");
         if (param.kind == ParameterKind.NAMED) output
-            .write("var $name = typeof(_optObj_.$name) === 'undefined' ? ${param.defaultValue} : _optObj_.$name;");
+            .write("var $name = _optObj_.$name === void 0 ? ${param.defaultValue} : _optObj_.$name;");
 
         if (param.kind != ParameterKind.REQUIRED) output.write("if($name !== null) {");
 
