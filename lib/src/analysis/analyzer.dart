@@ -46,8 +46,8 @@ class Dictionary {
     return null;
   }
 
-  crawl(String path, [bool deep = false]) {
-    var libs = _crawler.crawl(path, deep);
+  crawl(String path) {
+    var libs = _crawler(path);
     imports[libs.first.name] = libs;
     libs.forEach((library) {
       if(libraries.containsKey(library.name))
@@ -75,8 +75,11 @@ class Analyzer {
   buildLibrary(String library, [bool deep = true]) {
     if (!dictionary.libraries.containsKey(library) || _nodeTree.containsKey(library)) return;
 
-    var libPath = dictionary.libraries[library].path;
-    dictionary.crawl(libPath, dictionary.libraries[library].name.startsWith("dart."));
+    var isDartLibrary = dictionary.libraries[library].name.startsWith("dart.");
+    if(!isDartLibrary) {
+      var libPath = dictionary.libraries[library].path;
+      dictionary.crawl(libPath);
+    }
 
     if (!deep) {
       dictionary.imports[library].forEach((lib) => buildLibrary(lib.name, true));
@@ -87,39 +90,42 @@ class Analyzer {
 
     dictionary.libraries[library].astUnits.forEach((u) => u.visitChildren(visitor));
 
-    var overflowQueue = <Class>[];
-    var wasIterated = <String, bool>{};
+    if(!isDartLibrary) {
+      var overflowQueue = <Class>[];
+      var wasIterated = <String, bool>{};
 
-    iterateClass(Class c, [bool overflow = true]) {
-      if (c.inheritedFrom.length <= 0) return;
+      iterateClass(Class c, [bool overflow = true]) {
+        if (c.inheritedFrom.length <= 0) return;
 
-      buildLibrary(c.libraryName, false);
+        buildLibrary(c.libraryName, false);
 
-      for(var type in []..addAll(c.inheritedFrom)) {
-        var prop = dictionary.searchForGlobalProp(type, libraryName: c.libraryName);
+        for(var type in []..addAll(c.inheritedFrom)) {
+          var prop = dictionary.searchForGlobalProp(type, libraryName: c.libraryName);
 
-        if(prop != null && _nodeTree.containsKey(prop)) {
-          var nodeTree = _nodeTree[prop];
+          if(prop != null && _nodeTree.containsKey(prop)) {
+            var nodeTree = _nodeTree[prop];
 
-          if(nodeTree.containsKey(type)) {
-            if(prop == c.libraryName && !wasIterated.containsKey(type) && overflow) {
-              overflowQueue.add(c);
-              return;
+            if(nodeTree.containsKey(type)) {
+              if(prop == c.libraryName && !wasIterated.containsKey(type) && overflow) {
+                overflowQueue.add(c);
+                return;
+              }
+
+              c.inheritedFrom.addAll(nodeTree[type].inheritedFrom);
             }
-
-            c.inheritedFrom.addAll(nodeTree[type].inheritedFrom);
           }
         }
+
+        wasIterated[c.name] = true;
       }
 
-      wasIterated[c.name] = true;
-    }
 
-    _nodeTree[library].forEach((_, c) {
-      if(c is Class)
-        iterateClass(c);
-    });
-    overflowQueue.forEach((c) => iterateClass(c, false));
+      _nodeTree[library].forEach((_, c) {
+        if(c is Class)
+          iterateClass(c);
+      });
+      overflowQueue.forEach((c) => iterateClass(c, false));
+    }
   }
 
   List<Parameter> getFunctionParameters(String library, String function, [String c]) {
