@@ -53,7 +53,7 @@ init.libraries.forEach(function(elm) {
 
     if(Array.isArray(elm)) {
       elm.forEach(function(name) {
-        if(init.allClasses[name] && ((library.name !== 'dart.async' && init.mangledGlobalNames[name]) || name === 'ek' || name === '_Completer')) {
+        if(init.allClasses[name] && init.mangledGlobalNames[name]) {
           library.names[init.mangledGlobalNames[name] || name] = {
             name: name,
             fields: init.allClasses[name]['$__fields__'],

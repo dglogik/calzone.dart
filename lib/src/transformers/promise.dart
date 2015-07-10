@@ -24,9 +24,6 @@ class PromiseTransformer implements TypeTransformer {
     var classData = compiler.classes["dart.async._Completer"];
     var data = compiler.classes["dart.async._SyncCompleter"];
 
-    var future = mangledNames.getClassFields("dart.async", compiler.isMinified
-        ? "ek" : "_Completer")[0];
-
     output.write("""
       if(obj && typeof(obj.then) === 'function' && typeof(obj.catch) === 'function') {
         var completer = new ${mangledNames.getLibraryObject("dart.async")}.${mangledNames.getClassName("dart.async", "new Completer\$sync")}();
@@ -35,7 +32,7 @@ class PromiseTransformer implements TypeTransformer {
         }).catch(function(err) {
           completer.${data.key.getMangledName("_completeError")}(err);
         });
-        return completer.$future;
+        return ${compiler.isMinified ? r"completer[init.allClasses[completer.constructor.name]['$__fields__'][0]]" : "completer.future"};
       }
     """);
   }
