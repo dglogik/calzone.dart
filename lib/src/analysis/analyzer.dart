@@ -6,7 +6,7 @@ class Dictionary {
   final SourceCrawler _crawler;
 
   Dictionary({List packageRoots}):
-    _crawler = new SourceCrawler(packageRoots: packageRoots, allowedDartPaths: ["dart:async"]);
+    _crawler = new SourceCrawler(packageRoots: packageRoots, allowedDartPaths: []);
 
   String searchForGlobalProp(String name, {String libraryName, LibraryTuple library}) {
     String _getName(CompilationUnit astUnit) {

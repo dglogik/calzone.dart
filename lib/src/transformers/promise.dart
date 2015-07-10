@@ -24,10 +24,8 @@ class PromiseTransformer implements TypeTransformer {
     var classData = compiler.classes["dart.async._Completer"];
     var data = compiler.classes["dart.async._SyncCompleter"];
 
-    var future = classData.key.getField("future",
-        compiler.analyzer.getClass("dart.async", "Completer"),
-        mangledNames.getClassFields("dart.async", compiler.isMinified
-            ? "Pf" : "_Completer"));
+    var future = mangledNames.getClassFields("dart.async", compiler.isMinified
+        ? "Pf" : "_Completer")[0];
 
     output.write("""
       if(obj && typeof(obj.then) === 'function' && typeof(obj.catch) === 'function') {
