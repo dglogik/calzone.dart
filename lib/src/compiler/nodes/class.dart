@@ -49,7 +49,7 @@ class Class implements Renderable {
             var isDefault = name.length == 0;
             var buf = isDefault ? constructor : global;
             if (!isDefault) buf.write("mdex.${this.data["name"]}.$name = function() {");
-            buf.write(!isDefault ? "return mdex.${this.data["name"]}._(" : "this[clOb] = ");
+            buf.write(!isDefault ? "return mdex.${this.data["name"]}[clCl](" : "this[clOb] = ");
 
             var code = data["code"] == null || data["code"].length == 0
                 ? "function(){}"
@@ -62,6 +62,8 @@ class Class implements Renderable {
                 transform: FunctionTransformation.NONE)).render(compiler, buf);
             buf.write(".apply(this, arguments)");
             buf.write(!isDefault ? ");};" : ";");
+            if(isDefault)
+              buf.write("this[clOb][clId] = this;");
             continue;
           }
 
@@ -222,6 +224,7 @@ class Class implements Renderable {
     output.write("mdex.$name[clCl] = ");
     output.write("function(__obj__) {var returned = Object.create(mdex.$name.prototype);");
     output.write("returned[clOb] = __obj__;");
+    output.write("returned[clOb][clId] = returned;");
     output.write("return returned;};");
   }
 }

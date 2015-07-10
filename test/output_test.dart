@@ -39,6 +39,10 @@ main() async {
   test("Default Values", () {
     expect(nodeJson["default_values"], equals(true));
   });
+
+  test("Retain Wrapper Instance", () {
+    expect(nodeJson["retain_wrapper_instance"], equals(true));
+  });
 }
 
 Future setup() async {

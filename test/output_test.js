@@ -144,4 +144,12 @@ describe('default_values', function() {
   assert(test.d() === 'Hello World!false2.55');
 });
 
+describe('retain_wrapper_instance', function() {
+  var classTest = new T.ClassTest();
+  classTest.abc = 'xyz';
+
+  var test = new T.ClassWrapperTest(classTest);
+
+  assert(test.c.abc === 'xyz');
+});
 console.log(JSON.stringify(json));
