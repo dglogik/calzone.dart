@@ -17,6 +17,13 @@ packages
 *.js.deps
 *.js.map
 
+# Dart
+.pub
+packages
+.packages
+./**/packages
+pubspec.lock
+
 # Include when developing application packages.
 pubspec.lock
 

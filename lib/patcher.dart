@@ -53,7 +53,7 @@ init.libraries.forEach(function(elm) {
 
     if(Array.isArray(elm)) {
       elm.forEach(function(name) {
-        if(init.allClasses[name] && ((library.name !== 'dart.async' && init.mangledGlobalNames[name]) || name === 'Pf' || name === '_Completer')) {
+        if(init.allClasses[name] && ((library.name !== 'dart.async' && init.mangledGlobalNames[name]) || name === 'ek' || name === '_Completer')) {
           library.names[init.mangledGlobalNames[name] || name] = {
             name: name,
             fields: init.allClasses[name]['$__fields__'],
@@ -240,7 +240,8 @@ class Patcher {
         }
 
         if (line.startsWith("$main:")) {
-          data.replaceRange(index, index + 7, ["$main:[function(a){},\"\$1\",\"ao\",2,0,279],"]);
+          data[index + 6] = data[index + 6].substring(data[index + 6].indexOf("}") + 2);
+          data.replaceRange(index, index + 6, ["$main:[function(a){},"]);
           foundMain = true;
           if(foundMain && foundTypeCheck)
             break;
