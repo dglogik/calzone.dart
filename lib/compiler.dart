@@ -140,7 +140,7 @@ class MangledNames extends _JSONWrapper {
       throw library;
 
     if (!data["libraries"][library]["staticFields"].containsKey(staticField))
-      return null;
+      throw staticField;
 
     return data["libraries"][library]["staticFields"][staticField];
   }

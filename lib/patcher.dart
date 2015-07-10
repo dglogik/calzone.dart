@@ -42,6 +42,17 @@ init.libraries.forEach(function(elm) {
     if(index == 0) {
       library.name = elm;
     }
+    
+    if(index == 5 && elm.toString() === elm) {
+      var field = regex.exec(elm);
+      while(field != null) {
+        field = field[0];
+        if(staticFieldKeys.indexOf(field) >= 0) {
+          library.staticFields[init.mangledGlobalNames[field]] = field;
+        }
+        field = regex.exec(elm);
+      }
+    }
 
     if(index === length - 1) {
       var alphadex = 25;
@@ -60,13 +71,13 @@ init.libraries.forEach(function(elm) {
           };
 
           if(init.statics[name] && init.statics[name]['^']) {
-            var names = init.statics[name]['^'].split(';')[1];
+            var names = init.statics[name]['^'];
 
             var field = regex.exec(names);
             while(field != null) {
               field = field[0];
               if(staticFieldKeys.indexOf(field) >= 0) {
-                library.staticFields[name + '.' + init.mangledGlobalNames[field]] = field;
+                library.staticFields[init.mangledGlobalNames[name] + '.' + init.mangledGlobalNames[field]] = field;
               }
               field = regex.exec(names);
             }
