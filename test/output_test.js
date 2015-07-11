@@ -129,6 +129,7 @@ describe('inheritance', function() {
 
   assert(test.invoke() === 'Salutations, human.');
   assert(test.c.invoke() === 'Salutations, human.');
+  assert(_super.prototype.invoke.call(test.c) === 'Hello World!');
 
   InheritanceTest.prototype.invoke = function() {
     return this.str;
@@ -152,4 +153,5 @@ describe('retain_wrapper_instance', function() {
 
   assert(test.c.abc === 'xyz');
 });
+
 console.log(JSON.stringify(json));
