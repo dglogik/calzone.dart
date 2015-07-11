@@ -75,20 +75,16 @@ final String _OVERRIDE_PREFIX = """
   var mdex = module.exports;
   var obdp = Object.defineProperty;
   var obfr = Object.freeze;
-  
-  var clOb = sSym ? Symbol.for("calzone.obj") : "__obj__";
-  var clEx = sSym ? Symbol.for("calzone.extendsObj") : "__extends_obj__"; 
 
   var clIw = sSym ? Symbol.for("calzone.isWrapped") : "__isWrapped__";
+  var clOb = sSym ? Symbol.for("calzone.obj") : "__obj__";
   var clCl = sSym ? Symbol.for("calzone.constructor") : "_";
   var clId = sSym ? Symbol.for("calzone.id") : "__calzone_id__";
 
   function overrideFunc(cl, proto, name, mangledName) {
     if(cl[name] === proto[name])
       return;
-    if(!cl[clEx])
-      cl[clEx] = Object.create(cl[clOb]);
-    cl[clEx][mangledName] = function() {
+    cl[clOb][mangledName] = function() {
       var args = new Array(arguments.length);
       var length = args.length;
       for(var i = 0; i < length; ++i) {

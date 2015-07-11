@@ -7,7 +7,7 @@ class BaseTypeTransformer implements TypeTransformer {
 
   @override
   transformToDart(Compiler compiler, StringBuffer output) =>
-    output.write("if(obj[clIw]) { return obj[clEx] || obj[clOb]; }");
+    output.write("if(obj[clIw]) { return obj[clOb]; }");
 
   @override
   transformFromDart(Compiler compiler, StringBuffer output) =>
