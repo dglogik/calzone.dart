@@ -242,10 +242,11 @@ List<dynamic> _getTypeTree(String type) {
 }
 
 // dart2js has a weird order, so reorganize entries from analyzer
-List<Parameter> _getParamsFromInfo(Compiler compiler, String typeStr, [List<Parameter> analyzerParams]) {
+List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data, [List<Parameter> analyzerParams]) {
+  var typeStr = data["type"];
   String type = _TYPE_REGEX.firstMatch(typeStr).group(1);
 
-  int paramNameIndex = 1;
+  int paramNameIndex = 0;
 
   var isOptional = false;
   var isPositional = false;
@@ -255,6 +256,7 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, String typeStr, [List<Para
   List<String> p = type.split(_COMMA_REGEX)..removeWhere((piece) => piece.trim().length == 0);
   if (p == null || p.length == 0) return [];
   List<Parameter> parameters = p.map((String piece) {
+    int index = p.indexOf(piece);
     piece = piece.trim();
 
     if (piece.startsWith("[")) {
@@ -304,13 +306,21 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, String typeStr, [List<Para
       actualName = split[1];
     } else {
       var c = _getTypeTree(split[0])[0];
-      if (c != "Function" && !compiler.classes.containsKey(c) && !compiler.classes.keys.any((key) => key.contains(".$c"))) {
+      if (c != "Function" &&
+          !compiler.classes.containsKey(c) &&
+          c != "dynamic" &&
+          !PRIMITIVES.contains(c) &&
+          !compiler.classes.keys.any((key) => key.contains(".$c"))) {
         piece = "dynamic";
         actualName = c;
       } else {
         piece = split[0];
-        paramNameIndex++;
-        actualName = "\$" + ("n" * paramNameIndex);
+
+        if(data.containsKey("parameters") && data["parameters"].length == p.length) {
+          actualName = data["parameters"][index]["name"];
+        } else {
+          actualName = "\$" + ("n" * ++paramNameIndex);
+        }
       }
     }
 

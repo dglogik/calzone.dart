@@ -56,7 +56,7 @@ class Class implements Renderable {
                 : "${compiler.mangledNames.getLibraryObject(libraryName)}.${data["code"].split(":")[0].trim()}";
 
             var func = this.data["name"];
-            (new Func(data, _getParamsFromInfo(compiler, data["type"], compiler.analyzer.getFunctionParameters(c.libraryName, func, memberData["name"])),
+            (new Func(data, _getParamsFromInfo(compiler, data, compiler.analyzer.getFunctionParameters(c.libraryName, func, memberData["name"])),
                 code: code,
                 withSemicolon: false,
                 transform: FunctionTransformation.NONE)).render(compiler, buf);
@@ -69,7 +69,7 @@ class Class implements Renderable {
 
           if (data["kind"] == "constructor" && !isTopLevel) continue;
 
-          var params = _getParamsFromInfo(compiler, data["type"], compiler.analyzer.getFunctionParameters(c.libraryName, data["name"], memberData["name"]));
+          var params = _getParamsFromInfo(compiler, data, compiler.analyzer.getFunctionParameters(c.libraryName, data["name"], memberData["name"]));
 
           if (c != null && c.getters.contains(data["name"]) && params.length == 0) {
             if (!accessors.contains(name)) accessors.add(name);
@@ -148,13 +148,13 @@ class Class implements Renderable {
 
           var pOutput = new StringBuffer();
           pOutput.write("(");
-          (new Func(getters[accessor], _getParamsFromInfo(compiler, getters[accessor]["type"]),
+          (new Func(getters[accessor], _getParamsFromInfo(compiler, getters[accessor]),
               binding: "this[clOb]",
               transform: FunctionTransformation.NONE,
               withSemicolon: false)).render(compiler, pOutput);
           pOutput.write(").apply(this, arguments)");
 
-          compiler.baseTransformer.handleReturn(prototype, pOutput.toString(), getters[accessor]["type"]);
+          compiler.baseTransformer.handleReturn(prototype, pOutput.toString(), getters[accessor]);
           prototype.write("},");
         }
 
@@ -162,7 +162,7 @@ class Class implements Renderable {
           prototype.write("set $accessor(v) {");
           compiler.baseTransformer.transformTo(prototype, "v", setters[accessor]["type"]);
           prototype.write("(");
-          (new Func(setters[accessor], _getParamsFromInfo(compiler, setters[accessor]["type"]),
+          (new Func(setters[accessor], _getParamsFromInfo(compiler, setters[accessor]),
               binding: "this[clOb]",
               withSemicolon: false)).render(compiler, prototype);
           prototype.write(").call(this, v);},");

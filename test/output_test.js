@@ -142,6 +142,8 @@ describe('default_values', function() {
   var test = new T.B();
 
   assert(test.d() === 'Hello World!false2.55');
+
+  assert(T.getOne() === 1);
 });
 
 describe('retain_wrapper_instance', function() {

@@ -46,7 +46,7 @@ main() async {
 }
 
 Future setup() async {
-  var builder = new Builder("test/lib/test.a.dart", ["calzone.test.a", "calzone.test.b"],
+  var builder = new Builder("test/lib/test.c.dart", ["calzone.test.a", "calzone.test.b", "calzone.test.c"],
       typeTransformers: [
         new PromiseTransformer(),
         new ClosureTransformer(),
@@ -55,7 +55,7 @@ Future setup() async {
         new CollectionsTransformer()
       ],
       directory: "test/temp",
-      isMinified: true);
+      isMinified: false);
 
   var file = new File("test/temp/index.js");
   file.writeAsStringSync(await builder.build());

@@ -1,14 +1,5 @@
 library calzone.test.a;
 
-@MirrorsUsed(
-    targets: const [
-  "calzone.test.a",
-  "calzone.test.b",
-  "dart.async.Completer",
-  "dart.async.Future",
-  "dart.collection.LinkedHashMap"
-])
-import "dart:mirrors";
 import "dart:async";
 import "dart:collection";
 import "dart:typed_data";
@@ -156,12 +147,4 @@ class B extends C {
 
   e([Map map = const {"1": 1, "2": 2, "3": 3}, List list = const [1, 2, 3]]) {
   }
-}
-
-main(List<String> args) {
-  var a = new Symbol(args.length.toString());
-
-  reflectClass(a).getField(a);
-  reflectClass(a).invoke(a, []);
-  currentMirrorSystem().findLibrary(a).getField(a);
 }
