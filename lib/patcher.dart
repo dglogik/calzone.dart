@@ -243,7 +243,7 @@ class Patcher {
           data.insertAll(index + 1, []..addAll(_wrapperFile)..add('})()'));
         }
 
-        if (line.startsWith("$_isTest:")) {
+        if (line.startsWith("$_isTest:function(")) {
           data[index + 1] = "return true},";
           foundTypeCheck = true;
           if(foundMain && foundTypeCheck)
