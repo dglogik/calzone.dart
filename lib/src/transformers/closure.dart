@@ -12,7 +12,7 @@ class ClosureTransformer implements StaticTypeTransformer, TypeTransformer {
   transformToDart(Compiler compiler, StringBuffer output) {
     output.write(r"""
       if(typeof obj === 'function') {
-        var argCount = (new RegExp(/function[^]*\(([^]*)\)/))
+        var argCount = (new RegExp(/function[^]*\(([^]*)\)[ ]*{/))
           .exec(obj.toString())[1]
           .split(',')
           .filter(function(arg) {
