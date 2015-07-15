@@ -1,5 +1,7 @@
 part of calzone.compiler;
 
+final RegExp _FIELD_REGEX = new RegExp(r"[A-Za-z_0-9$]+(?=[^:A-Za-z]|$),*");
+
 class Class implements Renderable {
   final Map<String, List<Parameter>> functions = {};
   Map<String, dynamic> data;
@@ -124,7 +126,26 @@ class Class implements Renderable {
           if (c == null) continue;
 
           if (!c.staticFields.contains(data["name"])) {
-            var mangledName = mangledFields.length > 0 ? mangledFields.removeAt(0) : null;
+            var code = data["code"].split("\n")
+                .where((name) => name.length > 0 && !name.contains(" ") && name.contains(_FIELD_REGEX))
+                .map((name) {
+                  try {
+                    if(name.contains(":"))
+                      name = name.substring(name.indexOf(":") + 1);
+                    return _FIELD_REGEX.firstMatch(name).group(0);
+                  } catch(e) {
+                    throw name;
+                  }
+                })
+                .toList();
+            var mangledName;
+            code.forEach((name) {
+              if(mangledFields.contains(name))
+                mangledName = name;
+            });
+
+            if(mangledName == null)
+              throw data["name"] + ": " + code.toString() + ": " + mangledFields.toString();
 
             if (data["name"].startsWith("_")) continue;
 
