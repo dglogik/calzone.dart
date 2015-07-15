@@ -74,6 +74,8 @@ class Func implements Renderable {
         } else if(length < parameters.length) {
           throw _FUNCTION_REGEX.firstMatch(data["code"]).group(0);
         }
+        if(fullParamString.endsWith(","))
+          fullParamString = fullParamString.substring(0, fullParamString.length - 1);
       }
 
       var returnType = _TYPE_REGEX.firstMatch(data["type"]).group(2);
