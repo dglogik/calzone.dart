@@ -66,11 +66,11 @@ class Func implements Renderable {
           ? _code
           : (code.trim().startsWith(":") == false ? "$_binding." + code.substring(0, code.indexOf(":")) : code.substring(code.indexOf(":") + 2));
 
-      var fullParamString = parameters.map((p) => p.name).join(",");
+      String fullParamString = parameters.map((p) => p.name).join(",");
       if(data["code"] != null && data["code"].length > 0) {
         var length = _FUNCTION_REGEX.firstMatch(data["code"]).group(0).split(',').length;
         if(length > parameters.length) {
-          fullParamString = ("null," * (parameters.length - length)) + fullParamString;
+          fullParamString = ("null," * (length - parameters.length)) + fullParamString;
         } else if(length < parameters.length) {
           throw _FUNCTION_REGEX.firstMatch(data["code"]).group(0);
         }
