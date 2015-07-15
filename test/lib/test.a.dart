@@ -111,6 +111,9 @@ class ClassWrapperTest {
 
   ClassWrapperTest(this.c);
 
+  ClassWrapperTest.nothing():
+    c = new ClassTest();
+
   String invoke() =>
     c.invoke();
 }

@@ -153,5 +153,9 @@ describe('retain_wrapper_instance', function() {
   var test = new T.ClassWrapperTest(classTest);
 
   assert(test.c.abc === 'xyz');
+
+  test = new T.ClassWrapperTest.nothing();
+
+  assert(test.c.invoke() === 'Hello World!');
 });
 console.log(JSON.stringify(json));

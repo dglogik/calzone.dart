@@ -13,12 +13,13 @@ class BaseTypeTransformer implements TypeTransformer {
   transformFromDart(Compiler compiler, StringBuffer output) =>
     output.write("""
       if(obj[clId]) {
-        return obj[clId];  
+        return obj[clId];
       }
 
-      if(typeof(module.exports[init.mangledGlobalNames[obj.constructor.name]]) !== 'undefined' && module.exports[init.mangledGlobalNames[obj.constructor.name]][clCl]) {
-        var classObj = module.exports[init.mangledGlobalNames[obj.constructor.name]][clCl];
-        return classObj(obj);
+      if(module.exports[init.mangledGlobalNames[obj.constructor.name]] !== void 0) {
+        var classObj = Object.create(module.exports[init.mangledGlobalNames[obj.constructor.name]].prototype);
+        classObj[clOb] = obj;
+        return classObj;
       }
     """);
 

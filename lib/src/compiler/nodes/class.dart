@@ -49,7 +49,7 @@ class Class implements Renderable {
             var isDefault = name.length == 0;
             var buf = isDefault ? constructor : global;
             if (!isDefault) buf.write("mdex.${this.data["name"]}.$name = function() {");
-            buf.write(!isDefault ? "return mdex.${this.data["name"]}[clCl](" : "this[clOb] = ");
+            buf.write(!isDefault ? "var classObj = Object.create(mdex.${this.data["name"]}.prototype); classObj[clOb] = " : "this[clOb] = ");
 
             var code = data["code"] == null || data["code"].length == 0
                 ? "function(){}"
@@ -60,10 +60,12 @@ class Class implements Renderable {
                 code: code,
                 withSemicolon: false,
                 transform: FunctionTransformation.NONE)).render(compiler, buf);
-            buf.write(".apply(this, arguments)");
-            buf.write(!isDefault ? ");};" : ";");
+            buf.write(".apply(this, arguments);");
             if(isDefault)
               buf.write("this[clOb][clId] = this;");
+            else {
+              buf.write("return classObj;};");
+            }
             continue;
           }
 
@@ -220,11 +222,5 @@ class Class implements Renderable {
     """);
 
     output.write(global.toString());
-
-    output.write("mdex.$name[clCl] = ");
-    output.write("function(__obj__) {var returned = Object.create(mdex.$name.prototype);");
-    output.write("returned[clOb] = __obj__;");
-    output.write("returned[clOb][clId] = returned;");
-    output.write("return returned;};");
   }
 }
