@@ -1,5 +1,7 @@
 part of calzone.compiler;
 
+final RegExp _FUNCTION_REGEX = new RegExp(r"function[^]*\(([^]*)\)");
+
 class Func implements Renderable {
   final Map<String, dynamic> data;
 
@@ -65,7 +67,16 @@ class Func implements Renderable {
           : (code.trim().startsWith(":") == false ? "$_binding." + code.substring(0, code.indexOf(":")) : code.substring(code.indexOf(":") + 2));
 
       var fullParamString = parameters.map((p) => p.name).join(",");
-
+      if(data["code"] != null && data["code"].length > 0) {
+        var length = _FUNCTION_REGEX.firstMatch(data["code"])[1].split(',').length;
+        if(length > parameters.length) {
+          for(int index = 1; index < parameters.length - length; index++) {
+            fullParamString = "null," + fullParamString;
+          }
+          if(fullParamString.endsWith(","))
+            fullParamString = fullParamString.substring(0, fullParamString.length - 1);
+        }
+      }
 
       var returnType = _TYPE_REGEX.firstMatch(data["type"]).group(2);
       compiler.baseTransformer.handleReturn(output,
