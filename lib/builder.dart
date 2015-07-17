@@ -17,7 +17,7 @@ bool _dart2js(List flags, String outputFile, String inputFile, {bool isMinified:
   var arguments = flags.map((flag) => "--$flag").toList();
   if(isMinified)
     arguments.add("-m");
-  arguments.addAll(["-o", outputFile, inputFile]);
+  arguments.addAll(["-Dcalzone.build=true", "-o", outputFile, inputFile]);
   return Process.runSync("dart2js", arguments).exitCode == 0;
 }
 
