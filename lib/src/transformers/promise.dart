@@ -54,6 +54,9 @@ class PromiseTransformer implements TypeTransformer {
           }, {
             ${compiler.isMinified ? "\$1" : "call\$1"}: function(err) {
               error(err);
+            },
+            ${compiler.isMinified ? "\$2" : "call\$2"}: function(err, trace) {
+              error(err);
             }
           });
         });
