@@ -68,11 +68,11 @@ class Func implements Renderable {
 
       String fullParamString = parameters.map((p) => p.name).join(",");
       if(data["code"] != null && data["code"].length > 0) {
-        var length = _FUNCTION_REGEX.firstMatch(data["code"]).group(0).split(',').length;
+        var length = _FUNCTION_REGEX.firstMatch(data["code"]).group(1).split(',').length;
         if(length > parameters.length) {
           fullParamString = ("null," * (length - parameters.length)) + fullParamString;
         } else if(length < parameters.length) {
-          throw _FUNCTION_REGEX.firstMatch(data["code"]).group(0);
+          throw _FUNCTION_REGEX.firstMatch(data["code"]).group(1);
         }
         if(fullParamString.endsWith(","))
           fullParamString = fullParamString.substring(0, fullParamString.length - 1);

@@ -13,10 +13,10 @@ class ClosureTransformer implements StaticTypeTransformer, TypeTransformer {
     output.write(r"""
       if(typeof obj === 'function') {
         var argCount = (new RegExp(/function[ a-zA-Z0-9$]*\(([, a-zA-Z0-9$_]*)\)[ ]*{/))
-          .exec(obj.toString())[0]
+          .exec(obj.toString())[1]
           .split(',')
           .filter(function(arg) {
-            return arg.length > 0;
+            return arg.trim().length > 0;
           })
           .length;
     """);
