@@ -85,7 +85,8 @@ class ClosureTest {
   final Function closure;
   final Function closure2;
 
-  ClosureTest(this.closure, this.closure2);
+  ClosureTest(this.closure, closure2(String)):
+    this.closure2 = closure2;
 
   dynamic exec() {
     return closure();

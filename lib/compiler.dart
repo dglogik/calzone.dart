@@ -87,7 +87,6 @@ final String _OVERRIDE_PREFIX = """
       var args = new Array(arguments.length);
       var length = args.length;
       for(var i = 0; i < length; ++i) {
-        // console.log(arguments[i]);
         args[i] = dynamicFrom(arguments[i]);
       }
 
@@ -233,8 +232,9 @@ List<dynamic> _getTypeTree(String type) {
   if (match.group(2) != null &&
       match.group(2).trim().length > 0 &&
       match.group(2) != type) {
-    for (var group in match.group(2).split(r"[\,]{1}\s*")) tree
-        .addAll(_getTypeTree(group));
+    for (var group in match.group(2).split(_COMMA_REGEX)) {
+      tree.add(group.trim());
+    }
   }
 
   return tree;
@@ -283,7 +283,7 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
           .where((e) => e.length > 0)
           .map((e) => e.contains(" ")
                   ? e.split(" ")[0]
-                  : (compiler.classes.containsKey(_getTypeTree(e)[0]) || compiler.classes.keys.any((key) => key.endsWith("." + _getTypeTree(e)[0])))
+                  : (compiler.classes.containsKey(_getTypeTree(e)[0]) || compiler.classes.keys.any((key) => key.endsWith("." + _getTypeTree(e)[0])) || PRIMITIVES.contains(e))
               ? e : "dynamic")
           .toList();
 
@@ -294,7 +294,8 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
         groupParts = groupParts.sublist(0, groupParts.length - 1);
       }
 
-      functionParams.add(groupParts.join(" "));
+      var returnValue = groupParts.join(" ").trim();
+      functionParams.add(returnValue.length > 0 ? returnValue : "void");
       piece = piece.substring(0, match.start) + "Function<${functionParams.join(",")}>$name" + piece.substring(match.end);
     }
 

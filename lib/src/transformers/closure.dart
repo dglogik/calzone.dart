@@ -44,13 +44,14 @@ class ClosureTransformer implements StaticTypeTransformer, TypeTransformer {
 
     List<List> types = tree.sublist(1, tree.length - 1);
     output.write("""
+      var _${name}_ = $name;
       $name = {
-        call\$${types.length}: function() {
+        ${compiler.isMinified ? "\$${types.length}" : "call\$${types.length}"}: function() {
           var args = new Array(arguments.length);
           for(var i = 0; i < args.length; ++i) {
             args[i] = dynamicFrom(arguments[i]);
           }
-          return dynamicFrom($name.apply(this, arguments));
+          return dynamicFrom(_${name}_.apply(this, arguments));
         }
       };
     """);
