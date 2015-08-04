@@ -51,7 +51,7 @@ class ClosureTransformer implements StaticTypeTransformer, TypeTransformer {
           for(var i = 0; i < args.length; ++i) {
             args[i] = dynamicFrom(arguments[i]);
           }
-          return dynamicFrom(_${name}_.apply(this, arguments));
+          return dynamicFrom(_${name}_.apply(this, args));
         }
       };
     """);
