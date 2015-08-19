@@ -45,6 +45,15 @@ class Class implements Renderable {
 
         if (type == "function") {
           if (names.contains(name) || name.startsWith("_")) continue;
+
+          if (NAME_REPLACEMENTS.containsKey(data["name"])) {
+            if (memberData["children"]
+                .map((f) => compiler.info.getElement(f.split("/")[0], f.split("/")[1])["name"])
+                .contains(NAME_REPLACEMENTS[data["name"]])) continue;
+            name = NAME_REPLACEMENTS[data["name"]];
+            data["name"] = name;
+          }
+
           names.add(name);
 
           if (data["kind"] == "constructor" && isTopLevel) {
@@ -88,14 +97,6 @@ class Class implements Renderable {
           }
 
           if (data["code"].length > 0) {
-            if (NAME_REPLACEMENTS.containsKey(data["name"])) {
-              if (memberData["children"]
-                  .map((f) => compiler.info.getElement(f.split("/")[0], f.split("/")[1]))
-                  .contains(NAME_REPLACEMENTS[data["name"]])) continue;
-              data["name"] = NAME_REPLACEMENTS[data["name"]];
-              name = data["name"];
-            }
-
             if (data["modifiers"]["static"] || data["modifiers"]["factory"]) {
               if (isTopLevel)
                 (new Func(data, params,
