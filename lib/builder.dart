@@ -13,10 +13,16 @@ enum BuilderStage {
   WRAP
 }
 
-bool _dart2js(List flags, String outputFile, String inputFile, {bool isMinified: false}) {
+bool _dart2js(List flags, String outputFile, String inputFile, PatcherTarget target, {bool isMinified: false}) {
   var arguments = flags.map((flag) => "--$flag").toList();
   if(isMinified)
     arguments.add("-m");
+  if(target == PatcherTarget.BROWSER) {
+    arguments.add("-Dcalzone.browser=true");
+  } else {
+    arguments.add("-Dcalzone.node=true");
+  }
+  
   arguments.addAll(["-Dcalzone.build=true", "-o", outputFile, inputFile]);
   return Process.runSync("dart2js", arguments).exitCode == 0;
 }
@@ -58,7 +64,7 @@ class Builder {
               "trust-primitives",
               "enable-experimental-mirrors"],
           "$directory/index.js",
-          dartFile, isMinified: isMinified);
+          dartFile, target, isMinified: isMinified);
     }
 
     if(stage == BuilderStage.WRAP || stage == BuilderStage.ALL) {
