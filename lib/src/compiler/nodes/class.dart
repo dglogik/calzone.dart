@@ -51,6 +51,7 @@ class Class implements Renderable {
                 .map((f) => compiler.info.getElement(f.split("/")[0], f.split("/")[1])["name"])
                 .contains(NAME_REPLACEMENTS[data["name"]])) continue;
             name = NAME_REPLACEMENTS[data["name"]];
+            if (names.contains(name)) continue;
             data["name"] = name;
           }
 
