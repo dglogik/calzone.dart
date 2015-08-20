@@ -103,18 +103,25 @@ class Class implements Renderable {
                     code: "init.allClasses.${data["code"].split(":")[0]}",
                     prefix: "mdex.${this.data["name"]}")).render(compiler, global);
             } else {
-              prototype.write(data["name"] + ": ");
-              (new Func(data, params,
-                  binding: "this[clOb]",
-                  code: "this[clOb].${data["code"].split(":")[0]}",
-                  withSemicolon: false)).render(compiler, prototype);
-              prototype.write(",");
+              if(data["name"] == "get" || data["name"] == "set") {
+                (new Func(data, params,
+                    binding: "this[clOb]",
+                    prefix: "mdex.${this.data["name"]}.prototype",
+                    code: "this[clOb].${data["code"].split(":")[0]}")).render(compiler, global);
+              } else {
+                prototype.write(data["name"] + ": ");
+                (new Func(data, params,
+                    binding: "this[clOb]",
+                    code: "this[clOb].${data["code"].split(":")[0]}",
+                    withSemicolon: false)).render(compiler, prototype);
+                prototype.write(",");
+              }
+
 
               StringBuffer buf = new StringBuffer();
               methods.add(buf);
 
               var dartName = data["code"].split(":")[0];
-
               buf.write("overrideFunc(this, proto, '$name', '$dartName');");
             }
           }
