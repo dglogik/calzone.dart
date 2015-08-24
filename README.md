@@ -1,23 +1,30 @@
 # calzone
 
-**Here be dragons.**
+Use your Dart library from JavaScript!
 
 A compiler/patcher for a JS bridge to your Dart library, using dart2js and analyzer.
 
-Yes, I'm fully aware that dev_compiler will be able to do this. I hope if your in need of something like this today, that you'll find good use in calzone. Otherwise, you should probably wait for dev_compiler.
-
-Calzone's CLI patching tools are getting better, but are not optimal for varying solutions. In the future there will be a much easier way to use calzone.
-
-calzone is rapidly evolving, changing, and being refactored. If your interested in using it and are having problems using it, please contact mbullington on the Dart Slack.
+Even though calzone.dart is reaching maturity, if you're interested in using it
+and are having problems using it, please contact mbullington on the Dart Slack.
 
 ## Transformers
 
-A large part of calzone works by transformers. A transformer is an addon to the compiler that will bridge together a Dart type (or types) with their JavaScript equivalents. An example of this is the PromiseTransformer, where it will take Promises and convert them to Futures, and vice versa. This API is frozen and is available for projects using calzone to build their own.
+A large part of calzone works by transformers. A transformer is an addon to the
+compiler that will bridge together a Dart type (or types) with their JavaScript
+equivalents. An example of this is the PromiseTransformer, where it will take
+Promises and convert them to Futures, and vice versa. This API is frozen and is
+available for projects using calzone to build their own.
 
-The best example of this is in the calzone.transformers library, which is our standard library for transformers.
-
-Wiki documentation for using the dynamic parts of a transformer will be available shortly.
+The best example of this is in the calzone.transformers library, which is our
+standard library for transformers. Most of these transformers are suggested
+for use, such as Promises <-> Future, Closure, and Collections.
 
 ## Using calzone
 
-Right now, the best example I can give for using calzone is [sdk-dslink-javascript](https://www.github.com/IOT-DSA/sdk-dslink-javascript), mostly in the tool/ directory. Wiki documentation for calzone, as well as documentation on the interworkings, will be ready soon.
+Please refer to the Wiki on how to use calzone, starting with
+[Creating a Stub](https://github.com/dglogik/calzone.dart/wiki/Creating-a-Stub),
+then [Internal Workings](https://github.com/dglogik/calzone.dart/wiki/Internal-Workings).
+For most usecases, you'll want to use the high-level Builder abstraction.
+
+For an example of using Builder, please refer to test/, or to
+[sdk-dslink-javascript](https://www.github.com/IOT-DSA/sdk-dslink-javascript).

@@ -4,6 +4,8 @@ import "dart:io";
 import "dart:async";
 import "dart:convert";
 
+import "package:node_preamble/preamble.dart" as preamble;
+
 var _SCRAPER = r"""
 function objEach(obj, cb, thisArg) {
   if(typeof thisArg !== 'undefined') {
@@ -42,7 +44,7 @@ init.libraries.forEach(function(elm) {
     if(index == 0) {
       library.name = elm;
     }
-    
+
     if(index == 5 && elm.toString() === elm) {
       var field = regex.exec(elm);
       while(field != null) {
@@ -97,48 +99,6 @@ init.libraries.forEach(function(elm) {
 console.log(JSON.stringify(map));
 """;
 
-var _NODE_PREAMBLE = r"""
-
-global.location = { href: "file://" + process.cwd() + "/" };
-global.scheduleImmediate = setImmediate;
-global.self = global;
-global.require = require;
-global.process = process;
-
-function computeCurrentScript() {
-  try {
-    throw new Error();
-  } catch(e) {
-    var stack = e.stack;
-    var re = new RegExp("^ *at [^(]*\\((.*):[0-9]*:[0-9]*\\)$", "mg");
-    var lastMatch = null;
-    do {
-      var match = re.exec(stack);
-      if (match != null) lastMatch = match;
-    } while (match != null);
-    return lastMatch[1];
-  }
-}
-
-var cachedCurrentScript = null;
-global.document = { get currentScript() {
-    if (cachedCurrentScript == null) {
-      cachedCurrentScript = {src: computeCurrentScript()};
-    }
-    return cachedCurrentScript;
-  }
-};
-
-global.dartDeferredLibraryLoader = function(uri, successCallback, errorCallback) {
-  try {
-    load(uri);
-    successCallback();
-  } catch (error) {
-    errorCallback(error);
-  }
-};
-""";
-
 class PatcherTarget {
   static const PatcherTarget NODE = const PatcherTarget._("node");
   static const PatcherTarget BROWSER = const PatcherTarget._("browser");
@@ -176,7 +136,7 @@ class Patcher {
 
     if (target == PatcherTarget.NODE) {
       // node preamble
-      data.insert(0, _NODE_PREAMBLE);
+      data.insert(0, preamble.getPreamble());
     }
 
     var index = data.length;
