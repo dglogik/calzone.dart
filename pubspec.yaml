@@ -1,9 +1,10 @@
 name: calzone
+version: 0.1.1
+description: Use Dart libraries from JavaScript.
 authors:
   - Michael Bullington <mikebullingtn@gmail.com>
   - Kenneth Endfinger <kaendfinger@gmail.com>
-homepage: https://github.com/DirectMyFile/calzone.dart
-version: 0.1.0
+homepage: https://github.com/dglogik/calzone.dart
 environment:
   sdk: '>=1.10.0 <2.0.0'
 dependencies:
@@ -14,4 +15,3 @@ dependencies:
     git: https://github.com/mbullington/analysis.git
 dev_dependencies:
   test: '>=0.12.3+4 <0.13.0'
-description: Use Dart libraries from JavaScript.
