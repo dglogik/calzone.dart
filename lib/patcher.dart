@@ -45,7 +45,7 @@ init.libraries.forEach(function(elm) {
       library.name = elm;
     }
 
-    if(index == 5 && elm.toString() === elm) {
+    if(index === 5 && elm != null && elm.toString() === elm) {
       var field = regex.exec(elm);
       while(field != null) {
         field = field[0];
