@@ -159,8 +159,10 @@ class InfoData extends _JSONWrapper {
 class InfoParent extends _JSONWrapper {
   InfoData parent;
   Map<String, Map> children = {};
+  String dataName;
 
   InfoParent(this.parent, Map data) : super(data) {
+    dataName = data["name"];
     for (var child in data["children"]) {
       child = child.split("/");
 
@@ -183,7 +185,11 @@ class InfoParent extends _JSONWrapper {
   String renderConditional(String name) {
     var conditionals = [];
     for(var childName in children.keys) {
-      if(children[childName]["kind"] == "method" && children[childName]["code"] != null) {
+      if(childName != dataName &&
+        !childName.startsWith("$dataName.") &&
+          children[childName]["kind"] == "function" &&
+          !children[childName]["modifiers"]["static"] &&
+          children[childName]["code"] != null) {
         conditionals.add("$name.${getMangledName(childName)}");
       }
     }

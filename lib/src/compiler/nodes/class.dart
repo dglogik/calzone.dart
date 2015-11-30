@@ -57,10 +57,10 @@ class Class implements Renderable {
 
           names.add(name);
 
-          if (data["kind"] == "constructor" && isTopLevel) {
-            var isDefault = name.length == 0;
+          if ((name == this.data["name"] || name.startsWith("${this.data["name"]}.")) && isTopLevel) {
+            var isDefault = name == this.data["name"];
             var buf = isDefault ? constructor : global;
-            if (!isDefault) buf.write("mdex.${this.data["name"]}.$name = function() {");
+            if (!isDefault) buf.write("mdex.${this.data["name"]}.${name.substring(this.data["name"].length + 1)} = function() {");
             buf.write(!isDefault ? "var classObj = Object.create(mdex.${this.data["name"]}.prototype); classObj[clOb] = " : "this[clOb] = ");
 
             var code = data["code"] == null || data["code"].length == 0
@@ -81,7 +81,7 @@ class Class implements Renderable {
             continue;
           }
 
-          if (data["kind"] == "constructor" && !isTopLevel) continue;
+          if ((name == this.data["name"] || name.startsWith("${this.data["name"]}.")) && !isTopLevel) continue;
 
           var params = _getParamsFromInfo(compiler, data, compiler.analyzer.getFunctionParameters(c.libraryName, data["name"], memberData["name"]));
 
