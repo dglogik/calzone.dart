@@ -1,5 +1,5 @@
 name: calzone
-version: 0.1.4
+version: 0.1.5
 description: Use Dart libraries from JavaScript.
 authors:
   - Michael Bullington <m.bullington@dglogik.com>
