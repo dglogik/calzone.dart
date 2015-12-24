@@ -120,10 +120,13 @@ class Class implements Renderable {
 
 
               StringBuffer buf = new StringBuffer();
-              methods.add(buf);
+
+              var length = _FUNCTION_REGEX.firstMatch(data["code"]).group(1).split(',').length;
 
               var dartName = data["code"].split(":")[0];
-              buf.write("overrideFunc(this, proto, '$name', '$dartName');");
+              buf.write("overrideFunc(this, proto, '$name', '$dartName', ${length - params.length});");
+
+              methods.add(buf);
             }
           }
         }

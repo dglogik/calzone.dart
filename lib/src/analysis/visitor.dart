@@ -149,7 +149,6 @@ class PrimitiveVisitor extends Visitor<MutableDuo<String, String>> {
             var mangledStatic = analyzer.compiler.mangledNames.getStaticField(this.libraryName, parts[0], className: data.value);
             if(mangledStatic != null)
               data.key += "stat.$mangledStatic";
-
             return true;
           }
         }
@@ -175,7 +174,7 @@ class PrimitiveVisitor extends Visitor<MutableDuo<String, String>> {
             ? analyzer.compiler.classes["$libraryName.${parts[0]}"]
             : analyzer.compiler.classes["${parts[0]}"];
 
-          if(c != null && c.key.children.containsKey(parts[1])) {
+          if(c != null && c.key.children.containsKey(parts[1]) && !c.key.children[parts[1]]["const"]) {
             data.key += c.key.getMangledName(parts[1]);
           } else {
             // must access a static variable

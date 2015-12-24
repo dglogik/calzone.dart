@@ -26,7 +26,7 @@ var map = {
   libraries: {}
 };
 
-var regex = new RegExp("[A-Za-z_0-9]+(?=[^:A-Za-z]|$),*", "g");
+var regex = new RegExp("[A-Za-z_0-9]+(?=[^:A-Za-z,]|$),*", "g");
 
 var staticFields = typeof(Isolate) !== "undefined" ? Isolate.$isolateProperties : I.p;
 var staticFieldKeys = Object.keys(staticFields);

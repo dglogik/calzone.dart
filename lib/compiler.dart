@@ -81,15 +81,15 @@ final String _OVERRIDE_PREFIX = """
   var clId = sSym ? Symbol.for("calzone.id") : "__calzone_id__";
   var clBk = sSym ? Symbol.for("calzone.backup") : "__backup__";
 
-  function overrideFunc(cl, proto, name, mangledName) {
+  function overrideFunc(cl, proto, name, mangledName, shift) {
     if(cl[name] === proto[name])
       return;
     cl[clOb][clBk][mangledName] = cl[clOb][mangledName];
     cl[clOb][mangledName] = function() {
       var args = new Array(arguments.length);
       var length = args.length;
-      for(var i = 0; i < length; ++i) {
-        args[i] = dynamicFrom(arguments[i]);
+      for(var i = shift; i < length; ++i) {
+        args[i - shift] = dynamicFrom(arguments[i]);
       }
 
       return dynamicTo((cl[name]).apply(cl, args));
