@@ -19,6 +19,7 @@ class BaseTypeTransformer implements TypeTransformer {
       if(module.exports[init.mangledGlobalNames[obj.constructor.name]] !== void 0) {
         var classObj = Object.create(module.exports[init.mangledGlobalNames[obj.constructor.name]].prototype);
         classObj[clOb] = obj;
+        classObj[clOb][clBk] = {};
         return classObj;
       }
     """);

@@ -127,6 +127,7 @@ describe('inheritance', function() {
 
   var test = new T.ClassWrapperTest(new InheritanceTest());
 
+  assert(_super.prototype.invoke.call(test.c) === "Hello World!");
   assert(test.invoke() === 'Salutations, human.');
   assert(test.c.invoke() === 'Salutations, human.');
 

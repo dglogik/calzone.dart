@@ -74,9 +74,9 @@ class Class implements Renderable {
                 transform: FunctionTransformation.NONE)).render(compiler, buf);
             buf.write(".apply(this, arguments);");
             if(isDefault)
-              buf.write("this[clOb][clId] = this;");
+              buf.write("this[clOb][clBk] = {};this[clOb][clId] = this;");
             else {
-              buf.write("return classObj;};");
+              buf.write("classObj[clOb][clBk] = {};classObj[clOb][clId] = classObj;return classObj;};");
             }
             continue;
           }
@@ -113,7 +113,7 @@ class Class implements Renderable {
                 prototype.write(data["name"] + ": ");
                 (new Func(data, params,
                     binding: "this[clOb]",
-                    code: "this[clOb].${data["code"].split(":")[0]}",
+                    code: "(this[clOb][clBk].${data["code"].split(":")[0]} || this[clOb].${data["code"].split(":")[0]})",
                     withSemicolon: false)).render(compiler, prototype);
                 prototype.write(",");
               }
