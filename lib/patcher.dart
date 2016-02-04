@@ -118,6 +118,7 @@ class PatcherTarget {
   String toString() => this._name;
 }
 
+// the ugly part of calzone
 class Patcher {
   final PatcherTarget target;
   final bool isMinified;
@@ -150,6 +151,7 @@ class Patcher {
 
       var main = "main";
       var _isTest = "_isTest";
+      var isTestLine = "";
 
       _iterate(number) {
         var iter = json["elements"]["library"][number]["children"].where((child) => child.contains("function"));
@@ -181,6 +183,7 @@ class Patcher {
 
           if(childData["name"] == "_isTest") {
             _isTest = childData["code"].split(":")[0].trim();
+            isTestLine = childData["code"].split("\n")[0].trim();
           }
         }
       }
@@ -203,7 +206,7 @@ class Patcher {
           data.insertAll(index + 1, []..addAll(_wrapperFile)..add('})()'));
         }
 
-        if (line.startsWith("$_isTest:function(a){") && data[index - 1].startsWith('"^":')) {
+        if (line.startsWith(isTestLine)) {
           data[index + 1] = "return true;},";
           foundTypeCheck = true;
           if(foundMain && foundTypeCheck)

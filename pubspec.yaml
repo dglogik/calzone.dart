@@ -13,5 +13,6 @@ dependencies:
   node_preamble: '^1.0.0'
   calzone_analysis:
     git: https://github.com/mbullington/analysis.git
+    # path: ../analysis
 dev_dependencies:
   test: '>=0.12.3+4 <0.13.0'
