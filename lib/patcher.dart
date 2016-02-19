@@ -133,12 +133,27 @@ class Patcher {
       _wrapperFile = wrapperFile is String ? new File(wrapperFile).readAsLinesSync() : wrapperFile;
 
   String patch() {
+    var FUNCTION_ARGUMENTS_PREAMBLE = """
+      function _dartFunctionArguments(a) {
+        var prefix = '${isMinified ? r'$' : r'call$'}';
+        var index = 0;
+
+        while(true) {
+          if(a[prefix + index.toString()])
+            return (prefix + index.toString());
+          index++;
+        }
+      }
+    """;
+
     var data = _compiledFile;
 
     if (target == PatcherTarget.NODE) {
       // node preamble
       data.insert(0, preamble.getPreamble());
     }
+
+    data.insert(0, FUNCTION_ARGUMENTS_PREAMBLE);
 
     var index = data.length;
     var reversed = []..addAll(data.reversed);
@@ -207,7 +222,22 @@ class Patcher {
         }
 
         if (line.startsWith(isTestLine)) {
-          data[index + 1] = "return true;},";
+          data[index + 1] = """
+          var index = this.b.length;
+          var indexTwo = !!this.c ? (index + this.c.length) : index;
+          var prefix = '\$';
+          var str = _dartFunctionArguments(a);
+
+          if(!a[prefix + index])
+            a[prefix + index] = function() { return this[str].apply(this, arguments); };
+
+          if(!a[prefix + indexTwo])
+            a[prefix + indexTwo] = function() { return this[str].apply(this, arguments); };
+
+          return true;
+          },
+          """.split("\n").map((s) => s.trim()).join("");
+
           foundTypeCheck = true;
           if(foundMain && foundTypeCheck)
             break;
@@ -230,7 +260,25 @@ class Patcher {
         }
 
         if (line.contains("buildFunctionType: function(returnType, parameterTypes, optionalParameterTypes) {")) {
-          data[index + 1] = "var proto = Object.create(new H.RuntimeFunctionType(returnType, parameterTypes, optionalParameterTypes, null)); proto._isTest\$1 = function() { return true; }; return proto;";
+          data[index + 1] = """
+            var proto = Object.create(new H.RuntimeFunctionType(returnType, parameterTypes, optionalParameterTypes, null));
+            proto._isTest\$1 = function(a) {
+              var index = parameterTypes.length;
+              var indexTwo = optionalParameterTypes ? (index + optionalParameterTypes.length) : index;
+              var prefix = 'call\$';
+              var str = _dartFunctionArguments(a);
+
+              if(!a[prefix + index])
+                a[prefix + index] = function() { return this[str].apply(this, arguments); };
+
+              if(!a[prefix + indexTwo])
+                a[prefix + indexTwo] = function() { return this[str].apply(this, arguments); };
+
+              return true;
+            };
+            return proto;
+          """.split("\n").map((s) => s.trim()).join("");
+
           foundTypeCheck = true;
           if(foundMain && foundTypeCheck)
             break;
