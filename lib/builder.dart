@@ -22,7 +22,7 @@ bool _dart2js(List flags, String outputFile, String inputFile, PatcherTarget tar
   } else {
     arguments.add("-Dcalzone.node=true");
   }
-  
+
   arguments.addAll(["-Dcalzone.build=true", "-o", outputFile, inputFile]);
   return Process.runSync("dart2js", arguments).exitCode == 0;
 }
@@ -60,6 +60,7 @@ class Builder {
         temp.deleteSync(recursive: true);
       temp.createSync();
 
+      LOGGER.fine("Compiling w/ dart2js");
       _dart2js(["dump-info",
               "trust-primitives",
               "enable-experimental-mirrors"],
@@ -72,7 +73,9 @@ class Builder {
           "$directory/index.js.info.json",
           isMinified: isMinified);
 
+      LOGGER.fine("Scraping dart2js output");
       var mangledNames = JSON.decode(await scraper.scrape());
+      LOGGER.fine("Done scraping dart2js output");
 
       var compiler = new Compiler(dartFile,
         "$directory/index.js.info.json",
@@ -80,6 +83,7 @@ class Builder {
         typeTransformers: typeTransformers,
         isMinified: isMinified);
 
+      LOGGER.fine("Compiling wrapper for dart2js output");
       var str = compiler.compile(include);
       str = await onWrapperGenerated(str);
 
@@ -88,6 +92,7 @@ class Builder {
         target: target,
         isMinified: isMinified);
 
+      LOGGER.fine("Patching wrapper into file");
       return patcher.patch();
     }
 

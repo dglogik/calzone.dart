@@ -313,8 +313,8 @@ class Scraper extends Patcher {
 
     String returned = "";
 
-    await process.stderr.forEach((data) => stderr.writeln(UTF8.decode(data)));
     await process.stdout.forEach((data) => returned += UTF8.decode(data));
+    await process.stderr.forEach((data) => stderr.writeln(UTF8.decode(data)));
 
     return returned;
   }

@@ -1,7 +1,11 @@
 library calzone.util;
 
+import "package:logging/logging.dart";
+
 import "package:calzone/compiler.dart";
 export "package:calzone/compiler.dart" show Compiler, InfoData, MangledNames;
+
+final Logger LOGGER = new Logger("calzone.dart");
 
 /**
  * TypeTransformer is a class that handles dynamically converting one type to

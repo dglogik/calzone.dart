@@ -3,6 +3,7 @@ import "dart:async";
 import "dart:convert";
 
 import "package:test/test.dart";
+import "package:logging/logging.dart";
 
 import "package:calzone/transformers.dart";
 import "package:calzone/builder.dart";
@@ -10,6 +11,9 @@ import "package:calzone/builder.dart";
 Map<String, dynamic> nodeJson = {};
 
 main() async {
+  Logger.root.level = Level.FINE;
+  Logger.root.onRecord.listen((rec) => print("${rec.loggerName} ${rec.time}: ${rec.message}"));
+
   await setup();
 
   test("CollectionsTransformer", () {
