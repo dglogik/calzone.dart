@@ -16,9 +16,12 @@ main() {
   });
 
   test("Analyzer#getFunctionParameters()", () {
-    expect(analyzer.getFunctionParameters("calzone.test.a", "c", "B").length, equals(0));
-    expect(analyzer.getFunctionParameters("calzone.test.a", "d", "B").length, equals(6));
-    expect(analyzer.getFunctionParameters("calzone.test.a", "e", "B").length, equals(2));
+    expect(analyzer.getFunctionParameters("calzone.test.a", "c", "B").length,
+        equals(0));
+    expect(analyzer.getFunctionParameters("calzone.test.a", "d", "B").length,
+        equals(6));
+    expect(analyzer.getFunctionParameters("calzone.test.a", "e", "B").length,
+        equals(2));
   });
 
   test("Class.name", () {
@@ -29,17 +32,24 @@ main() {
   });
 
   test("Class.libraryName", () {
-    expect(analyzer.getClass("calzone.test.a", "A").libraryName, equals("calzone.test.a"));
-    expect(analyzer.getClass("calzone.test.a", "B").libraryName, equals("calzone.test.a"));
-    expect(analyzer.getClass("calzone.test.a", "C").libraryName, equals("calzone.test.a"));
-    expect(analyzer.getClass("calzone.test.b", "D").libraryName, equals("calzone.test.b"));
+    expect(analyzer.getClass("calzone.test.a", "A").libraryName,
+        equals("calzone.test.a"));
+    expect(analyzer.getClass("calzone.test.a", "B").libraryName,
+        equals("calzone.test.a"));
+    expect(analyzer.getClass("calzone.test.a", "C").libraryName,
+        equals("calzone.test.a"));
+    expect(analyzer.getClass("calzone.test.b", "D").libraryName,
+        equals("calzone.test.b"));
   });
 
   test("Class.inheritedFrom", () {
     expect(analyzer.getClass("calzone.test.b", "D").inheritedFrom, equals([]));
-    expect(analyzer.getClass("calzone.test.a", "C").inheritedFrom, equals(["D"]));
-    expect(analyzer.getClass("calzone.test.a", "B").inheritedFrom, equals(["C", "D"]));
-    expect(analyzer.getClass("calzone.test.a", "A").inheritedFrom, equals(["B", "C", "D"]));
+    expect(
+        analyzer.getClass("calzone.test.a", "C").inheritedFrom, equals(["D"]));
+    expect(analyzer.getClass("calzone.test.a", "B").inheritedFrom,
+        equals(["C", "D"]));
+    expect(analyzer.getClass("calzone.test.a", "A").inheritedFrom,
+        equals(["B", "C", "D"]));
   });
 
   test("Class.getters", () {
@@ -53,19 +63,26 @@ main() {
   });
 
   test("Class.staticFields", () {
-    expect(analyzer.getClass("calzone.test.a", "A").staticFields, equals(["stat", "_stat"]));
+    expect(analyzer.getClass("calzone.test.a", "A").staticFields,
+        equals(["stat", "_stat"]));
   });
 
   test("Class.functions", () {
-    expect(analyzer.getClass("calzone.test.a", "A").functions.length, equals(0));
-    expect(analyzer.getClass("calzone.test.a", "C").functions.keys, equals(["b"]));
-    expect(analyzer.getClass("calzone.test.b", "D").functions.keys, equals(["b"]));
+    expect(
+        analyzer.getClass("calzone.test.a", "A").functions.length, equals(0));
+    expect(
+        analyzer.getClass("calzone.test.a", "C").functions.keys, equals(["b"]));
+    expect(
+        analyzer.getClass("calzone.test.b", "D").functions.keys, equals(["b"]));
   });
 
   test("Parameter.type", () {
     // (String hello, hello2, {String hi, String string: "Hello World!", bool boolean: false, num number: 2.55})
 
-    var types = analyzer.getFunctionParameters("calzone.test.a", "d", "B").map((param) => param.type).toList();
+    var types = analyzer
+        .getFunctionParameters("calzone.test.a", "d", "B")
+        .map((param) => param.type)
+        .toList();
 
     expect(types[0], equals("String"));
     expect(types[1], equals("dynamic"));
@@ -78,7 +95,10 @@ main() {
   test("Parameter.name", () {
     // (String hello, hello2, {String hi, String string: "Hello World!", bool boolean: false, num number: 2.55})
 
-    var types = analyzer.getFunctionParameters("calzone.test.a", "d", "B").map((param) => param.name).toList();
+    var types = analyzer
+        .getFunctionParameters("calzone.test.a", "d", "B")
+        .map((param) => param.name)
+        .toList();
 
     expect(types[0], equals("hello"));
     expect(types[1], equals("hello2"));
@@ -89,7 +109,10 @@ main() {
 
     // ([Map map = const {"1": 1, "2": 2, "3": 3}, List list = const [1, 2, 3]])
 
-    types = analyzer.getFunctionParameters("calzone.test.a", "e", "B").map((param) => param.name).toList();
+    types = analyzer
+        .getFunctionParameters("calzone.test.a", "e", "B")
+        .map((param) => param.name)
+        .toList();
 
     expect(types[0], equals("map"));
     expect(types[1], equals("list"));
@@ -98,7 +121,10 @@ main() {
   test("Parameter.defaultValue", () {
     // (String hello, hello2, {String hi, String string: "Hello World!", bool boolean: false, num number: 2.55})
 
-    var types = analyzer.getFunctionParameters("calzone.test.a", "d", "B").map((param) => param.defaultValue).toList();
+    var types = analyzer
+        .getFunctionParameters("calzone.test.a", "d", "B")
+        .map((param) => param.defaultValue)
+        .toList();
 
     expect(types[2], equals("null"));
     expect(types[3], equals('"Hello World!"'));
@@ -107,7 +133,10 @@ main() {
 
     // ([Map map = const {"1": 1, "2": 2, "3": 3}, List list = const [1, 2, 3]])
 
-    types = analyzer.getFunctionParameters("calzone.test.a", "e", "B").map((param) => param.defaultValue).toList();
+    types = analyzer
+        .getFunctionParameters("calzone.test.a", "e", "B")
+        .map((param) => param.defaultValue)
+        .toList();
 
     expect(types[0], equals('{"1":1,"2":2,"3":3}'));
     expect(types[1], equals("[1,2,3]"));
@@ -116,7 +145,10 @@ main() {
   test("Parameter.kind", () {
     // (String hello, hello2, {String hi, String string: "Hello World!", bool boolean: false, num number: 2.55})
 
-    var types = analyzer.getFunctionParameters("calzone.test.a", "d", "B").map((param) => param.kind).toList();
+    var types = analyzer
+        .getFunctionParameters("calzone.test.a", "d", "B")
+        .map((param) => param.kind)
+        .toList();
 
     expect(types[0], equals(ParameterKind.REQUIRED));
     expect(types[1], equals(ParameterKind.REQUIRED));
@@ -127,7 +159,10 @@ main() {
 
     // ([Map map = const {"1": 1, "2": 2, "3": 3}, List list = const [1, 2, 3]])
 
-    types = analyzer.getFunctionParameters("calzone.test.a", "e", "B").map((param) => param.kind).toList();
+    types = analyzer
+        .getFunctionParameters("calzone.test.a", "e", "B")
+        .map((param) => param.kind)
+        .toList();
 
     expect(types[0], equals(ParameterKind.POSITIONAL));
     expect(types[1], equals(ParameterKind.POSITIONAL));

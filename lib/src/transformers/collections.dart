@@ -31,7 +31,8 @@ class CollectionsTransformer implements TypeTransformer {
 
   transformToDart(Compiler compiler, StringBuffer output) {
     var mangledNames = compiler.mangledNames;
-    var constructor = mangledNames.getClassName("dart.collection", "new LinkedHashMap\$fromIterables");
+    var constructor = mangledNames.getClassName(
+        "dart.collection", "new LinkedHashMap\$fromIterables");
 
     output.write("""
       if(Array.isArray(obj)) {
@@ -107,5 +108,4 @@ class CollectionsTransformer implements TypeTransformer {
       }
     """);
   }
-
 }

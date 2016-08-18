@@ -21,8 +21,10 @@ abstract class TypeTransformer {
 abstract class StaticTypeTransformer {
   List<String> get types;
 
-  void staticTransformTo(Compiler compiler, StringBuffer output, String name, List tree);
-  void staticTransformFrom(Compiler compiler, StringBuffer output, String name, List tree);
+  void staticTransformTo(
+      Compiler compiler, StringBuffer output, String name, List tree);
+  void staticTransformFrom(
+      Compiler compiler, StringBuffer output, String name, List tree);
 }
 
 class Duo<K, V> {

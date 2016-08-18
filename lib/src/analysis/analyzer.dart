@@ -5,41 +5,43 @@ class Dictionary {
   final Map<String, List<LibraryTuple>> imports = {};
   final SourceCrawler _crawler;
 
-  Dictionary({List packageRoots}):
-    _crawler = new SourceCrawler(packageRoots: packageRoots, allowedDartPaths: []);
+  Dictionary({List packageRoots})
+      : _crawler =
+            new SourceCrawler(packageRoots: packageRoots, allowedDartPaths: []);
 
-  String searchForGlobalProp(String name, {String libraryName, LibraryTuple library}) {
+  String searchForGlobalProp(String name,
+      {String libraryName, LibraryTuple library}) {
     String _getName(CompilationUnit astUnit) {
       String name;
       astUnit.directives
           .where((e) => e is PartOfDirective || e is LibraryDirective)
-          .forEach((e) => name = e is PartOfDirective ? e.libraryName.name : e.name.name);
+          .forEach((e) =>
+              name = e is PartOfDirective ? e.libraryName.name : e.name.name);
       return name;
     }
 
-    if(library == null)
-      library = libraries[libraryName];
+    if (library == null) library = libraries[libraryName];
 
     var astUnits = [];
 
     astUnits.addAll(library.astUnits);
 
-    for(var import in imports[library.name]) {
+    for (var import in imports[library.name]) {
       astUnits.addAll(import.astUnits);
     }
 
-    for(var astUnit in astUnits) {
-      if(searchForProp(astUnit, name) != null)
-        return _getName(astUnit);
+    for (var astUnit in astUnits) {
+      if (searchForProp(astUnit, name) != null) return _getName(astUnit);
     }
 
     return null;
   }
 
   AstNode searchForProp(CompilationUnit unit, String property) {
-    for(var d in unit.declarations) {
-      if(d is NamedCompilationUnitMember && d.name.toString() == property
-          || d is TopLevelVariableDeclaration && d.variables.variables.any((v) => v.name.toString() == property))
+    for (var d in unit.declarations) {
+      if (d is NamedCompilationUnitMember && d.name.toString() == property ||
+          d is TopLevelVariableDeclaration &&
+              d.variables.variables.any((v) => v.name.toString() == property))
         return d;
     }
 
@@ -50,8 +52,7 @@ class Dictionary {
     var libs = _crawler(path);
     imports[libs.first.name] = libs;
     libs.forEach((library) {
-      if(libraries.containsKey(library.name))
-        return;
+      if (libraries.containsKey(library.name)) return;
       libraries[library.name] = library;
     });
   }
@@ -73,24 +74,27 @@ class Analyzer {
   }
 
   buildLibrary(String library, [bool deep = true]) {
-    if (!dictionary.libraries.containsKey(library) || _nodeTree.containsKey(library)) return;
+    if (!dictionary.libraries.containsKey(library) ||
+        _nodeTree.containsKey(library)) return;
 
     var isDartLibrary = dictionary.libraries[library].name.startsWith("dart.");
-    if(!isDartLibrary) {
+    if (!isDartLibrary) {
       var libPath = dictionary.libraries[library].path;
       dictionary.crawl(libPath);
     }
 
     if (!deep) {
-      dictionary.imports[library].forEach((lib) => buildLibrary(lib.name, true));
+      dictionary.imports[library]
+          .forEach((lib) => buildLibrary(lib.name, true));
     }
 
     _nodeTree[library] = {};
     var visitor = new AnalyzerVisitor(this, library, _nodeTree[library]);
 
-    dictionary.libraries[library].astUnits.forEach((u) => u.visitChildren(visitor));
+    dictionary.libraries[library].astUnits
+        .forEach((u) => u.visitChildren(visitor));
 
-    if(!isDartLibrary) {
+    if (!isDartLibrary) {
       var overflowQueue = <Class>[];
       var wasIterated = <String, bool>{};
 
@@ -99,14 +103,17 @@ class Analyzer {
 
         buildLibrary(c.libraryName, false);
 
-        for(var type in []..addAll(c.inheritedFrom)) {
-          var prop = dictionary.searchForGlobalProp(type, libraryName: c.libraryName);
+        for (var type in []..addAll(c.inheritedFrom)) {
+          var prop =
+              dictionary.searchForGlobalProp(type, libraryName: c.libraryName);
 
-          if(prop != null && _nodeTree.containsKey(prop)) {
+          if (prop != null && _nodeTree.containsKey(prop)) {
             var nodeTree = _nodeTree[prop];
 
-            if(nodeTree.containsKey(type)) {
-              if(prop == c.libraryName && !wasIterated.containsKey(type) && overflow) {
+            if (nodeTree.containsKey(type)) {
+              if (prop == c.libraryName &&
+                  !wasIterated.containsKey(type) &&
+                  overflow) {
                 overflowQueue.add(c);
                 return;
               }
@@ -119,16 +126,15 @@ class Analyzer {
         wasIterated[c.name] = true;
       }
 
-
       _nodeTree[library].forEach((_, c) {
-        if(c is Class)
-          iterateClass(c);
+        if (c is Class) iterateClass(c);
       });
       overflowQueue.forEach((c) => iterateClass(c, false));
     }
   }
 
-  List<Parameter> getFunctionParameters(String library, String function, [String c]) {
+  List<Parameter> getFunctionParameters(String library, String function,
+      [String c]) {
     buildLibrary(library);
     if (function == c) function = "";
 

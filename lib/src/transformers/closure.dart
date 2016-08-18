@@ -38,9 +38,9 @@ class ClosureTransformer implements StaticTypeTransformer, TypeTransformer {
   // TODO
   transformFromDart(Compiler compiler, StringBuffer output) {}
 
-  staticTransformTo(Compiler compiler, StringBuffer output, String name, List tree) {
-    if(tree.length < 2)
-      return;
+  staticTransformTo(
+      Compiler compiler, StringBuffer output, String name, List tree) {
+    if (tree.length < 2) return;
 
     List<List> types = tree.sublist(1, tree.length - 1);
     output.write("""
@@ -58,5 +58,6 @@ class ClosureTransformer implements StaticTypeTransformer, TypeTransformer {
   }
 
   // TODO
-  staticTransformFrom(Compiler compiler, StringBuffer output, String name, List tree) {}
+  staticTransformFrom(
+      Compiler compiler, StringBuffer output, String name, List tree) {}
 }

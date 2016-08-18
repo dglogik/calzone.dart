@@ -15,7 +15,11 @@ class Class implements Renderable {
   final String name;
   final String libraryName;
 
-  Class(this.name, this.libraryName, {this.staticFields: const [], this.getters: const [], this.setters: const [], this.inheritedFrom: const []});
+  Class(this.name, this.libraryName,
+      {this.staticFields: const [],
+      this.getters: const [],
+      this.setters: const [],
+      this.inheritedFrom: const []});
 
   render(Compiler compiler, StringBuffer output) {
     List<String> names = [];
@@ -26,9 +30,9 @@ class Class implements Renderable {
     StringBuffer global = new StringBuffer();
 
     _handleClassChildren(Class c, Map memberData, {bool isTopLevel: true}) {
-      var mangledFields = compiler.mangledNames.getClassFields(c.libraryName, c.name);
-      if(mangledFields == null)
-        mangledFields = [];
+      var mangledFields =
+          compiler.mangledNames.getClassFields(c.libraryName, c.name);
+      if (mangledFields == null) mangledFields = [];
 
       List<String> accessors = [];
       Map<String, Map> getters = {};
@@ -48,7 +52,8 @@ class Class implements Renderable {
 
           if (NAME_REPLACEMENTS.containsKey(data["name"])) {
             if (memberData["children"]
-                .map((f) => compiler.info.getElement(f.split("/")[0], f.split("/")[1])["name"])
+                .map((f) => compiler.info
+                    .getElement(f.split("/")[0], f.split("/")[1])["name"])
                 .contains(NAME_REPLACEMENTS[data["name"]])) continue;
             name = NAME_REPLACEMENTS[data["name"]];
             if (names.contains(name)) continue;
@@ -57,41 +62,65 @@ class Class implements Renderable {
 
           names.add(name);
 
-          if ((name == this.data["name"] || name.startsWith("${this.data["name"]}.")) && isTopLevel) {
+          if ((name == this.data["name"] ||
+                  name.startsWith("${this.data["name"]}.")) &&
+              isTopLevel) {
             var isDefault = name == this.data["name"];
             var buf = isDefault ? constructor : global;
-            if (!isDefault) buf.write("mdex.${this.data["name"]}.${name.substring(this.data["name"].length + 1)} = function() {");
-            buf.write(!isDefault ? "var classObj = Object.create(mdex.${this.data["name"]}.prototype); classObj[clOb] = " : "this[clOb] = ");
+            if (!isDefault)
+              buf.write(
+                  "mdex.${this.data["name"]}.${name.substring(this.data["name"].length + 1)} = function() {");
+            buf.write(!isDefault
+                ? "var classObj = Object.create(mdex.${this.data["name"]}.prototype); classObj[clOb] = "
+                : "this[clOb] = ");
 
             var code = data["code"] == null || data["code"].length == 0
                 ? "function(){}"
                 : "${compiler.mangledNames.getLibraryObject(libraryName)}.${data["code"].split(":")[0].trim()}";
 
             var func = this.data["name"];
-            (new Func(data, _getParamsFromInfo(compiler, data, compiler.analyzer.getFunctionParameters(c.libraryName, func, memberData["name"])),
-                code: code,
-                withSemicolon: false,
-                transform: FunctionTransformation.NONE)).render(compiler, buf);
+            (new Func(
+                    data,
+                    _getParamsFromInfo(
+                        compiler,
+                        data,
+                        compiler.analyzer.getFunctionParameters(
+                            c.libraryName, func, memberData["name"])),
+                    code: code,
+                    withSemicolon: false,
+                    transform: FunctionTransformation.NONE))
+                .render(compiler, buf);
             buf.write(".apply(this, arguments);");
-            if(isDefault)
+            if (isDefault)
               buf.write("this[clOb][clBk] = {};this[clOb][clId] = this;");
             else {
-              buf.write("classObj[clOb][clBk] = {};classObj[clOb][clId] = classObj;return classObj;};");
+              buf.write(
+                  "classObj[clOb][clBk] = {};classObj[clOb][clId] = classObj;return classObj;};");
             }
             continue;
           }
 
-          if ((name == this.data["name"] || name.startsWith("${this.data["name"]}.")) && !isTopLevel) continue;
+          if ((name == this.data["name"] ||
+                  name.startsWith("${this.data["name"]}.")) &&
+              !isTopLevel) continue;
 
-          var params = _getParamsFromInfo(compiler, data, compiler.analyzer.getFunctionParameters(c.libraryName, data["name"], memberData["name"]));
+          var params = _getParamsFromInfo(
+              compiler,
+              data,
+              compiler.analyzer.getFunctionParameters(
+                  c.libraryName, data["name"], memberData["name"]));
 
-          if (c != null && c.getters.contains(data["name"]) && params.length == 0) {
+          if (c != null &&
+              c.getters.contains(data["name"]) &&
+              params.length == 0) {
             if (!accessors.contains(name)) accessors.add(name);
             getters[name] = data;
             continue;
           }
 
-          if (c != null && c.setters.contains(data["name"]) && params.length == 1) {
+          if (c != null &&
+              c.setters.contains(data["name"]) &&
+              params.length == 1) {
             if (!accessors.contains(name)) accessors.add(name);
             setters[name] = data;
             continue;
@@ -101,30 +130,38 @@ class Class implements Renderable {
             if (data["modifiers"]["static"] || data["modifiers"]["factory"]) {
               if (isTopLevel)
                 (new Func(data, params,
-                    code: "init.allClasses.${data["code"].split(":")[0]}",
-                    prefix: "mdex.${this.data["name"]}")).render(compiler, global);
+                        code: "init.allClasses.${data["code"].split(":")[0]}",
+                        prefix: "mdex.${this.data["name"]}"))
+                    .render(compiler, global);
             } else {
-              if(data["name"] == "get" || data["name"] == "set") {
+              if (data["name"] == "get" || data["name"] == "set") {
                 (new Func(data, params,
-                    binding: "this[clOb]",
-                    prefix: "mdex.${this.data["name"]}.prototype",
-                    code: "this[clOb].${data["code"].split(":")[0]}")).render(compiler, global);
+                        binding: "this[clOb]",
+                        prefix: "mdex.${this.data["name"]}.prototype",
+                        code: "this[clOb].${data["code"].split(":")[0]}"))
+                    .render(compiler, global);
               } else {
                 prototype.write(data["name"] + ": ");
                 (new Func(data, params,
-                    binding: "this[clOb]",
-                    code: "(this[clOb][clBk].${data["code"].split(":")[0]} || this[clOb].${data["code"].split(":")[0]})",
-                    withSemicolon: false)).render(compiler, prototype);
+                        binding: "this[clOb]",
+                        code:
+                            "(this[clOb][clBk].${data["code"].split(":")[0]} || this[clOb].${data["code"].split(":")[0]})",
+                        withSemicolon: false))
+                    .render(compiler, prototype);
                 prototype.write(",");
               }
 
-
               StringBuffer buf = new StringBuffer();
 
-              var length = _FUNCTION_REGEX.firstMatch(data["code"]).group(1).split(',').length;
+              var length = _FUNCTION_REGEX
+                  .firstMatch(data["code"])
+                  .group(1)
+                  .split(',')
+                  .length;
 
               var dartName = data["code"].split(":")[0];
-              buf.write("overrideFunc(this, proto, '$name', '$dartName', ${length - params.length});");
+              buf.write(
+                  "overrideFunc(this, proto, '$name', '$dartName', ${length - params.length});");
 
               methods.add(buf);
             }
@@ -138,31 +175,38 @@ class Class implements Renderable {
           if (c == null) continue;
 
           if (!c.staticFields.contains(data["name"])) {
-            var code = data["code"].split("\n")
-                .where((name) => name.length > 0 && !name.contains(" ") && name.contains(_FIELD_REGEX))
+            var code = data["code"]
+                .split("\n")
+                .where((name) =>
+                    name.length > 0 &&
+                    !name.contains(" ") &&
+                    name.contains(_FIELD_REGEX))
                 .map((name) {
-                  try {
-                    if(name.contains(":"))
-                      name = name.substring(name.indexOf(":") + 1);
-                    return _FIELD_REGEX.firstMatch(name).group(0);
-                  } catch(e) {
-                    throw name;
-                  }
-                })
-                .toList();
+              try {
+                if (name.contains(":"))
+                  name = name.substring(name.indexOf(":") + 1);
+                return _FIELD_REGEX.firstMatch(name).group(0);
+              } catch (e) {
+                throw name;
+              }
+            }).toList();
             var mangledName;
             code.forEach((name) {
-              if(mangledFields.contains(name))
-                mangledName = name;
+              if (mangledFields.contains(name)) mangledName = name;
             });
 
-            if(mangledName == null)
-              throw data["name"] + ": " + code.toString() + ": " + mangledFields.toString();
+            if (mangledName == null)
+              throw data["name"] +
+                  ": " +
+                  code.toString() +
+                  ": " +
+                  mangledFields.toString();
 
             if (data["name"].startsWith("_")) continue;
 
             prototype.write("get ${data["name"]}() {");
-            compiler.baseTransformer.handleReturn(prototype, "this[clOb].$mangledName", data["type"]);
+            compiler.baseTransformer.handleReturn(
+                prototype, "this[clOb].$mangledName", data["type"]);
             prototype.write("},");
 
             prototype.write("set ${data["name"]}(v) {");
@@ -183,28 +227,35 @@ class Class implements Renderable {
 
           var pOutput = new StringBuffer();
           pOutput.write("(");
-          (new Func(getters[accessor], _getParamsFromInfo(compiler, getters[accessor]),
-              binding: "this[clOb]",
-              transform: FunctionTransformation.NONE,
-              withSemicolon: false)).render(compiler, pOutput);
+          (new Func(getters[accessor],
+                  _getParamsFromInfo(compiler, getters[accessor]),
+                  binding: "this[clOb]",
+                  transform: FunctionTransformation.NONE,
+                  withSemicolon: false))
+              .render(compiler, pOutput);
           pOutput.write(").apply(this, arguments)");
 
-          compiler.baseTransformer.handleReturn(prototype, pOutput.toString(), getters[accessor]);
+          compiler.baseTransformer
+              .handleReturn(prototype, pOutput.toString(), getters[accessor]);
           prototype.write("},");
         }
 
         if (setters[accessor] != null) {
           prototype.write("set $accessor(v) {");
-          compiler.baseTransformer.transformTo(prototype, "v", setters[accessor]["type"]);
+          compiler.baseTransformer
+              .transformTo(prototype, "v", setters[accessor]["type"]);
           prototype.write("(");
-          (new Func(setters[accessor], _getParamsFromInfo(compiler, setters[accessor]),
-              binding: "this[clOb]",
-              withSemicolon: false)).render(compiler, prototype);
+          (new Func(setters[accessor],
+                  _getParamsFromInfo(compiler, setters[accessor]),
+                  binding: "this[clOb]", withSemicolon: false))
+              .render(compiler, prototype);
           prototype.write(").call(this, v);},");
         } else if (getters[accessor] != null) {
           prototype.write("set $accessor(v) {");
-          compiler.baseTransformer.transformTo(prototype, "v", getters[accessor]["type"]);
-          prototype.write("this[clOb].${getters[accessor]['code'].split(':')[0]} = function() { return v; };},");
+          compiler.baseTransformer
+              .transformTo(prototype, "v", getters[accessor]["type"]);
+          prototype.write(
+              "this[clOb].${getters[accessor]['code'].split(':')[0]} = function() { return v; };},");
         }
       }
     }
@@ -212,14 +263,16 @@ class Class implements Renderable {
     _handleClassChildren(this, data);
 
     this.inheritedFrom.forEach((superClass) {
-        var classObj = compiler.analyzer.getClass(null, superClass);
-        if (classObj != null)
-          _handleClassChildren(classObj,
-              compiler.classes[superClass] != null ?
-                  compiler.classes[superClass].key.data :
-                  compiler.classes[classObj.libraryName + "." + superClass].key.data,
-              isTopLevel: false);
-      });
+      var classObj = compiler.analyzer.getClass(null, superClass);
+      if (classObj != null)
+        _handleClassChildren(
+            classObj,
+            compiler.classes[superClass] != null
+                ? compiler.classes[superClass].key.data
+                : compiler
+                    .classes[classObj.libraryName + "." + superClass].key.data,
+            isTopLevel: false);
+    });
 
     output.write("mdex.$name = function() {");
     output.write(constructor.toString());
@@ -227,7 +280,7 @@ class Class implements Renderable {
 
     var proto = prototype.toString();
     // cut off trailing comma
-    if(proto.length > 0) {
+    if (proto.length > 0) {
       output.write("mdex.$name.prototype = {");
       output.write(proto.substring(0, proto.length - 1));
       output.write("};");

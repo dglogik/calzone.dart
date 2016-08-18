@@ -28,43 +28,45 @@ class CollectionsTest {
   CollectionsTest(this.list, this.map);
 
   List getList() {
-    return ["a", "b", {"a": 1, "b": 2}];
+    return [
+      "a",
+      "b",
+      {"a": 1, "b": 2}
+    ];
   }
 
   Map getMap() {
     return {
-      "a": [1, {
-          "c": 3,
-          "d": 4
-        }],
+      "a": [
+        1,
+        {"c": 3, "d": 4}
+      ],
       "b": 2
     };
   }
 
   bool verifyList() {
-    if(list[0] == "a"
-        && list[1] == "b"
-        && list[2] is Map
-        && list[2].containsKey("a")
-        && list[2]["a"] == 1
-        && list[2].containsKey("b")
-        && list[2]["b"] == 2)
-      return true;
+    if (list[0] == "a" &&
+        list[1] == "b" &&
+        list[2] is Map &&
+        list[2].containsKey("a") &&
+        list[2]["a"] == 1 &&
+        list[2].containsKey("b") &&
+        list[2]["b"] == 2) return true;
     return false;
   }
 
   bool verifyMap() {
-    if(map.containsKey("a")
-        && map["a"] is List
-        && map["a"][0] == 1
-        && map["a"][1] is Map
-        && map["a"][1].containsKey("c")
-        && map["a"][1]["c"] == 3
-        && map["a"][1].containsKey("d")
-        && map["a"][1]["d"] == 4
-        && map.containsKey("b")
-        && map["b"] == 2)
-      return true;
+    if (map.containsKey("a") &&
+        map["a"] is List &&
+        map["a"][0] == 1 &&
+        map["a"][1] is Map &&
+        map["a"][1].containsKey("c") &&
+        map["a"][1]["c"] == 3 &&
+        map["a"][1].containsKey("d") &&
+        map["a"][1]["d"] == 4 &&
+        map.containsKey("b") &&
+        map["b"] == 2) return true;
     return false;
   }
 }
@@ -75,8 +77,7 @@ class PromiseTest {
   PromiseTest(this.future);
 
   Future getFuture() {
-    if(!(future is Future))
-      throw future.runtimeType;
+    if (!(future is Future)) throw future.runtimeType;
     return future.then((_) {});
   }
 }
@@ -85,8 +86,7 @@ class ClosureTest {
   final Function closure;
   final Function closure2;
 
-  ClosureTest(this.closure, closure2(String)):
-    this.closure2 = closure2;
+  ClosureTest(this.closure, closure2(String)) : this.closure2 = closure2;
 
   dynamic exec() {
     return closure();
@@ -112,11 +112,9 @@ class ClassWrapperTest {
 
   ClassWrapperTest(this.c);
 
-  ClassWrapperTest.nothing():
-    c = new ClassTest();
+  ClassWrapperTest.nothing() : c = new ClassTest();
 
-  String invoke() =>
-    c.invoke();
+  String invoke() => c.invoke();
 }
 
 class BufferTest {
@@ -124,8 +122,7 @@ class BufferTest {
 
   BufferTest(this.data);
 
-  ByteData getData() =>
-    new ByteData.view(data.buffer);
+  ByteData getData() => new ByteData.view(data.buffer);
 }
 
 class ConstructorTest {
@@ -140,15 +137,17 @@ class A extends B {
 }
 
 class B extends C {
-  c() {
-  }
+  c() {}
 
-  String d(String hello, hello2, {String hi, String string: "Hello World!", bool boolean: false, num number: 2.55}) {
-    if(string != "Hello World!" || boolean != false || number != 2.55)
+  String d(String hello, hello2,
+      {String hi,
+      String string: "Hello World!",
+      bool boolean: false,
+      num number: 2.55}) {
+    if (string != "Hello World!" || boolean != false || number != 2.55)
       throw new StateError("defaults didn't work");
     return string + boolean.toString() + number.toString();
   }
 
-  e([Map map = const {"1": 1, "2": 2, "3": 3}, List list = const [1, 2, 3]]) {
-  }
+  e([Map map = const {"1": 1, "2": 2, "3": 3}, List list = const [1, 2, 3]]) {}
 }
