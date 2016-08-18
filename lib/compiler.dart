@@ -114,30 +114,30 @@ class MangledNames extends _JSONWrapper {
   MangledNames(Map data) : super(data);
 
   String getClassName(String library, String className) {
-    if (!data["libraries"].containsKey(library) || !data["libraries"][library]["names"].containsKey(className))
+    if (!data["libraries"].containsKey(library) ||
+        !data["libraries"][library]["names"].containsKey(className))
       throw className;
     return data["libraries"][library]["names"][className]["name"];
   }
 
   List<String> getClassFields(String library, String className) {
-    if (!data["libraries"].containsKey(library) || !data["libraries"][library]["names"].containsKey(className))
+    if (!data["libraries"].containsKey(library) ||
+        !data["libraries"][library]["names"].containsKey(className))
       throw className;
     return data["libraries"][library]["names"][className]["fields"];
   }
 
   String getLibraryObject(String library) {
-    if (!data["libraries"].containsKey(library))
-      throw library;
+    if (!data["libraries"].containsKey(library)) throw library;
     return data["libraries"][library]["obj"];
   }
 
   // warning: this method doesn't throw, it returns null
-  String getStaticField(String library, String staticField, {String className}) {
-    if(className != null)
-      staticField = "$className.$staticField";
+  String getStaticField(String library, String staticField,
+      {String className}) {
+    if (className != null) staticField = "$className.$staticField";
 
-    if (!data["libraries"].containsKey(library))
-      throw library;
+    if (!data["libraries"].containsKey(library)) throw library;
 
     if (!data["libraries"][library]["staticFields"].containsKey(staticField))
       throw staticField;
@@ -179,16 +179,16 @@ class InfoParent extends _JSONWrapper {
   }
 
   String getMangledName(String child) {
-    if(children[child] == null || children[child]["code"] == null)
+    if (children[child] == null || children[child]["code"] == null)
       throw children[child];
     return children[child]["code"].split(":")[0].trim();
   }
 
   String renderConditional(String name) {
     var conditionals = [];
-    for(var childName in children.keys) {
-      if(childName != dataName &&
-        !childName.startsWith("$dataName.") &&
+    for (var childName in children.keys) {
+      if (childName != dataName &&
+          !childName.startsWith("$dataName.") &&
           children[childName]["kind"] == "function" &&
           !children[childName]["modifiers"]["static"] &&
           children[childName]["code"] != null) {
@@ -199,23 +199,22 @@ class InfoParent extends _JSONWrapper {
   }
 
   String getField(String name, Class c, List<String> fields) {
-    if(fields.length == 0)
-      throw fields;
+    if (fields.length == 0) throw fields;
 
     String value = "";
     int index = 0;
 
-    var childValues = children.values.where((v) => v["kind"] == "field" && !c.staticFields.contains(v["name"]));
-    for(var child in childValues) {
-      if(child["name"] == name) {
+    var childValues = children.values.where(
+        (v) => v["kind"] == "field" && !c.staticFields.contains(v["name"]));
+    for (var child in childValues) {
+      if (child["name"] == name) {
         value = fields[index];
         break;
       }
       index++;
     }
 
-    if(value.length == 0)
-      throw childValues.length;
+    if (value.length == 0) throw childValues.length;
     return value;
   }
 }
@@ -249,7 +248,8 @@ List<dynamic> _getTypeTree(String type) {
 }
 
 // dart2js has a weird order, so reorganize entries from analyzer
-List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data, [List<Parameter> analyzerParams]) {
+List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
+    [List<Parameter> analyzerParams]) {
   var typeStr = data["type"];
   String type = _TYPE_REGEX.firstMatch(typeStr).group(1);
 
@@ -260,7 +260,8 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
 
   if (type.length <= 0) return [];
 
-  List<String> p = type.split(_COMMA_REGEX)..removeWhere((piece) => piece.trim().length == 0);
+  List<String> p = type.split(_COMMA_REGEX)
+    ..removeWhere((piece) => piece.trim().length == 0);
   if (p == null || p.length == 0) return [];
   List<Parameter> parameters = p.map((String piece) {
     int index = p.indexOf(piece);
@@ -284,27 +285,33 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
 
     var match = _TYPE_REGEX.firstMatch(piece);
     if (match != null) {
-      List functionParams = match.group(1)
+      List functionParams = match
+          .group(1)
           .split(",")
-          .map((e) =>
-              e.replaceAll(r"[\[\]\{\}]", "").trim())
+          .map((e) => e.replaceAll(r"[\[\]\{\}]", "").trim())
           .where((e) => e.length > 0)
           .map((e) => e.contains(" ")
-                  ? e.split(" ")[0]
-                  : (compiler.classes.containsKey(_getTypeTree(e)[0]) || compiler.classes.keys.any((key) => key.endsWith("." + _getTypeTree(e)[0])) || PRIMITIVES.contains(e))
-              ? e : "dynamic")
+              ? e.split(" ")[0]
+              : (compiler.classes.containsKey(_getTypeTree(e)[0]) ||
+                  compiler.classes.keys
+                      .any((key) => key.endsWith("." + _getTypeTree(e)[0])) ||
+                  PRIMITIVES.contains(e)) ? e : "dynamic")
           .toList();
 
       var name = "";
       var groupParts = match.group(2).split(" ");
-      if (groupParts.length > 1 && !groupParts.last.contains(">") && !groupParts.last.contains(")")) {
+      if (groupParts.length > 1 &&
+          !groupParts.last.contains(">") &&
+          !groupParts.last.contains(")")) {
         name = " " + groupParts.last;
         groupParts = groupParts.sublist(0, groupParts.length - 1);
       }
 
       var returnValue = groupParts.join(" ").trim();
       functionParams.add(returnValue.length > 0 ? returnValue : "void");
-      piece = piece.substring(0, match.start) + "Function<${functionParams.join(",")}>$name" + piece.substring(match.end);
+      piece = piece.substring(0, match.start) +
+          "Function<${functionParams.join(",")}>$name" +
+          piece.substring(match.end);
     }
 
     var actualName = null;
@@ -324,7 +331,8 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
       } else {
         piece = split[0];
 
-        if(data.containsKey("parameters") && data["parameters"].length == p.length) {
+        if (data.containsKey("parameters") &&
+            data["parameters"].length == p.length) {
           actualName = data["parameters"][index]["name"];
         } else {
           actualName = "\$" + ("n" * ++paramNameIndex);
@@ -332,7 +340,9 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
       }
     }
 
-    ParameterKind kind = isOptional ? ParameterKind.NAMED : (isPositional ? ParameterKind.POSITIONAL : ParameterKind.REQUIRED);
+    ParameterKind kind = isOptional
+        ? ParameterKind.NAMED
+        : (isPositional ? ParameterKind.POSITIONAL : ParameterKind.REQUIRED);
 
     return new Parameter(kind, piece, actualName);
   }).toList();
@@ -341,7 +351,8 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
     parameters.forEach((Parameter param) {
       var matches = analyzerParams.where((p) => p.name == param.name);
       if (matches.length > 0 && matches.first.type != ParameterKind.REQUIRED) {
-        parameters[parameters.indexOf(param)] = new Parameter(param.kind, param.type, param.name, matches.first.defaultValue);
+        parameters[parameters.indexOf(param)] = new Parameter(
+            param.kind, param.type, param.name, matches.first.defaultValue);
       }
     });
   }

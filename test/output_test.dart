@@ -12,7 +12,8 @@ Map<String, dynamic> nodeJson = {};
 
 main() async {
   Logger.root.level = Level.FINE;
-  Logger.root.onRecord.listen((rec) => print("${rec.loggerName} ${rec.time}: ${rec.message}"));
+  Logger.root.onRecord
+      .listen((rec) => print("${rec.loggerName} ${rec.time}: ${rec.message}"));
 
   await setup();
 
@@ -50,7 +51,8 @@ main() async {
 }
 
 Future setup() async {
-  var builder = new Builder("test/lib/test.c.dart", ["calzone.test.a", "calzone.test.b", "calzone.test.c"],
+  var builder = new Builder("test/lib/test.c.dart",
+      ["calzone.test.a", "calzone.test.b", "calzone.test.c"],
       typeTransformers: [
         new PromiseTransformer(),
         new ClosureTransformer(),

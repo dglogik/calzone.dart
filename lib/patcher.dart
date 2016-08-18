@@ -108,10 +108,8 @@ class PatcherTarget {
   const PatcherTarget._(this._name);
 
   static PatcherTarget fromString(String str) {
-    if(str == "node")
-      return PatcherTarget.NODE;
-    if(str == "browser")
-      return PatcherTarget.BROWSER;
+    if (str == "node") return PatcherTarget.NODE;
+    if (str == "browser") return PatcherTarget.BROWSER;
     throw new StateError("unknown target");
   }
 
@@ -127,10 +125,17 @@ class Patcher {
   final Map<String, dynamic> _infoFile;
   final List<String> _wrapperFile;
 
-  Patcher(dynamic compiledFile, dynamic infoFile, dynamic wrapperFile, {this.target: PatcherTarget.BROWSER, this.isMinified: false}):
-      _compiledFile = compiledFile is String ? new File(compiledFile).readAsLinesSync() : compiledFile.split("\n"),
-      _infoFile = infoFile is String ? JSON.decode(new File(infoFile).readAsStringSync()) : infoFile,
-      _wrapperFile = wrapperFile is String ? new File(wrapperFile).readAsLinesSync() : wrapperFile;
+  Patcher(dynamic compiledFile, dynamic infoFile, dynamic wrapperFile,
+      {this.target: PatcherTarget.BROWSER, this.isMinified: false})
+      : _compiledFile = compiledFile is String
+            ? new File(compiledFile).readAsLinesSync()
+            : compiledFile.split("\n"),
+        _infoFile = infoFile is String
+            ? JSON.decode(new File(infoFile).readAsStringSync())
+            : infoFile,
+        _wrapperFile = wrapperFile is String
+            ? new File(wrapperFile).readAsLinesSync()
+            : wrapperFile;
 
   String patch() {
     var FUNCTION_ARGUMENTS_PREAMBLE = """
@@ -161,7 +166,7 @@ class Patcher {
     var foundTypeCheck = false;
     var foundMain = false;
 
-    if(isMinified) {
+    if (isMinified) {
       var json = _infoFile;
 
       var main = "main";
@@ -169,12 +174,14 @@ class Patcher {
       var isTestLine = "";
 
       _iterate(number) {
-        var iter = json["elements"]["library"][number]["children"].where((child) => child.contains("function"));
+        var iter = json["elements"]["library"][number]["children"]
+            .where((child) => child.contains("function"));
         iter = iter.toList();
 
-        var classes = json["elements"]["library"][number]["children"].where((child) => child.contains("class"));
+        var classes = json["elements"]["library"][number]["children"]
+            .where((child) => child.contains("class"));
 
-        for(var c in classes) {
+        for (var c in classes) {
           c = c.split("/");
 
           var type = c[0];
@@ -182,10 +189,11 @@ class Patcher {
 
           var data = json["elements"][type][id];
 
-          iter.addAll(data["children"].where((child) => child.contains("function")));
+          iter.addAll(
+              data["children"].where((child) => child.contains("function")));
         }
 
-        for(var func in iter) {
+        for (var func in iter) {
           func = func.split("/");
 
           var type = func[0];
@@ -193,22 +201,22 @@ class Patcher {
 
           var childData = json["elements"][type][id];
 
-          if(childData["name"] == "main")
+          if (childData["name"] == "main")
             main = childData["code"].split(":")[0].trim();
 
-          if(childData["name"] == "_isTest") {
+          if (childData["name"] == "_isTest") {
             _isTest = childData["code"].split(":")[0].trim();
             isTestLine = childData["code"].split("\n")[0].trim();
           }
         }
       }
 
-      for(var library in json["elements"]["library"].values) {
-        if(library["id"] == "library/0") {
+      for (var library in json["elements"]["library"].values) {
+        if (library["id"] == "library/0") {
           _iterate("0");
         }
 
-        if(library["name"] == "_js_helper") {
+        if (library["name"] == "_js_helper") {
           _iterate(library["id"].split("/")[1]);
           break;
         }
@@ -218,7 +226,11 @@ class Patcher {
         index--;
         if (line.endsWith('})()') && data.length - index < 4) {
           data[index] = line.substring(0, line.length - 4) + ';';
-          data.insertAll(index + 1, []..addAll(_wrapperFile)..add('})()'));
+          data.insertAll(
+              index + 1,
+              []
+                ..addAll(_wrapperFile)
+                ..add('})()'));
         }
 
         if (line.startsWith(isTestLine)) {
@@ -236,19 +248,21 @@ class Patcher {
 
           return true;
           },
-          """.split("\n").map((s) => s.trim()).join("");
+          """
+              .split("\n")
+              .map((s) => s.trim())
+              .join("");
 
           foundTypeCheck = true;
-          if(foundMain && foundTypeCheck)
-            break;
+          if (foundMain && foundTypeCheck) break;
         }
 
         if (line.startsWith("$main:")) {
-          data[index + 6] = data[index + 6].substring(data[index + 6].indexOf("}") + 2);
+          data[index + 6] =
+              data[index + 6].substring(data[index + 6].indexOf("}") + 2);
           data.replaceRange(index, index + 6, ["$main:[function(a){},"]);
           foundMain = true;
-          if(foundMain && foundTypeCheck)
-            break;
+          if (foundMain && foundTypeCheck) break;
         }
       }
     } else {
@@ -259,7 +273,8 @@ class Patcher {
           continue;
         }
 
-        if (line.contains("buildFunctionType: function(returnType, parameterTypes, optionalParameterTypes) {")) {
+        if (line.contains(
+            "buildFunctionType: function(returnType, parameterTypes, optionalParameterTypes) {")) {
           data[index + 1] = """
             var proto = Object.create(new H.RuntimeFunctionType(returnType, parameterTypes, optionalParameterTypes, null));
             proto._isTest\$1 = function(a) {
@@ -277,18 +292,19 @@ class Patcher {
               return true;
             };
             return proto;
-          """.split("\n").map((s) => s.trim()).join("");
+          """
+              .split("\n")
+              .map((s) => s.trim())
+              .join("");
 
           foundTypeCheck = true;
-          if(foundMain && foundTypeCheck)
-            break;
+          if (foundMain && foundTypeCheck) break;
         }
 
         if (line.contains("main: [function(args) {")) {
           data.removeRange(index + 1, index + 8);
           foundMain = true;
-          if(foundMain && foundTypeCheck)
-            break;
+          if (foundMain && foundTypeCheck) break;
         }
       }
     }
@@ -298,10 +314,9 @@ class Patcher {
 }
 
 class Scraper extends Patcher {
-  Scraper(dynamic compiledFile, dynamic infoFile, {isMinified: false}):
-      super(compiledFile, infoFile, _SCRAPER.split("\n"),
-          target: PatcherTarget.NODE,
-          isMinified: isMinified);
+  Scraper(dynamic compiledFile, dynamic infoFile, {isMinified: false})
+      : super(compiledFile, infoFile, _SCRAPER.split("\n"),
+            target: PatcherTarget.NODE, isMinified: isMinified);
 
   Future<String> scrape() async {
     var patch = super.patch();

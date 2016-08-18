@@ -1,7 +1,6 @@
 library calzone.test.c;
 
-@MirrorsUsed(
-    targets: const [
+@MirrorsUsed(targets: const [
   "calzone.test.a",
   "calzone.test.b",
   "calzone.test.c",
