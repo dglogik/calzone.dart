@@ -69,6 +69,35 @@ final String _OBJ_EACH_PREFIX = """
   }
 """;
 
+abstract class _SymbolTypes {
+  // an identifier in the prototype of a calzone wrapped class to indicate that
+  // it also has the below two symbols
+  static const String isWrapped = "clIw";
+  String get symIsWrapped => _SymbolTypes.isWrapped;
+  
+  // a reference to the dart object that the calzone class instance is wrapping
+  static const String dartObj = "clOb";
+  String get symDartObj => _SymbolTypes.dartObj;
+    
+  // backup object for when methods are overwritten
+  // when a method is overwritten, the original method is pushed into the
+  // backup object.
+  
+  // then when a super call is made from human-readable JS, the backup object
+  // is called instead of the actual object, so the super call does not end
+  // in a recursive loop. 
+  static const String backup = "clBk";
+  String get symBackup => _SymbolTypes.backup;
+  
+  // a reference to the javascript instance wrapping the dart object that's
+  // put on the object when it's instated.
+  
+  // see the base transformer, it uses this symbol to return the actual JS instance
+  // instead of creating a new wrapper the class.
+  static const String jsObj = "clId";
+  String get symJsObj => _SymbolTypes.jsObj;
+}
+
 final String _OVERRIDE_PREFIX = """
   var sSym = typeof(Symbol) === 'function';
 
@@ -76,16 +105,16 @@ final String _OVERRIDE_PREFIX = """
   var obdp = Object.defineProperty;
   var obfr = Object.freeze;
 
-  var clIw = sSym ? Symbol.for("calzone.isWrapped") : "__isWrapped__";
-  var clOb = sSym ? Symbol.for("calzone.obj") : "__obj__";
-  var clId = sSym ? Symbol.for("calzone.id") : "__calzone_id__";
-  var clBk = sSym ? Symbol.for("calzone.backup") : "__backup__";
+  var ${_SymbolTypes.isWrapped} = sSym ? Symbol.for("calzone.isWrapped") : "__isWrapped__";
+  var ${_SymbolTypes.dartObj} = sSym ? Symbol.for("calzone.obj") : "__obj__";
+  var ${_SymbolTypes.jsObj} = sSym ? Symbol.for("calzone.id") : "__calzone_id__";
+  var ${_SymbolTypes.backup} = sSym ? Symbol.for("calzone.backup") : "__backup__";
 
   function overrideFunc(cl, proto, name, mangledName, shift) {
     if(cl[name] === proto[name])
       return;
-    cl[clOb][clBk][mangledName] = cl[clOb][mangledName];
-    cl[clOb][mangledName] = function() {
+    cl[${_SymbolTypes.dartObj}][${_SymbolTypes.backup}][mangledName] = cl[${_SymbolTypes.dartObj}][mangledName];
+    cl[${_SymbolTypes.dartObj}][mangledName] = function() {
       var args = new Array(arguments.length);
       var length = args.length;
       for(var i = shift; i < length; ++i) {
