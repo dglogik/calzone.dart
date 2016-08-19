@@ -24,10 +24,6 @@ class Class extends _SymbolTypes implements Renderable {
       this.getters: const [],
       this.setters: const [],
       this.inheritedFrom: const []});
-      
-  renderConstructor(StringBuffer output, String name) {
-    
-  }
 
   renderDefinition(StringBuffer output, String name,
       StringBuffer constructor, StringBuffer prototype,
