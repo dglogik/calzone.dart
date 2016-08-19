@@ -97,9 +97,8 @@ class Class extends _SymbolTypes implements Renderable {
           .map((f) => compiler.info.getElement(f.split("/")[0], f.split("/")[1]))
           .toList();
 
-      int index = 0;
-      for (final _ in memberData["children"]) {
-        final data = childData[index++];
+      for (var index = 0; index < childData.length; index++) {
+        final data = childData[index];
         
         final type = data["kind"];
         String name = data["name"];
@@ -112,8 +111,9 @@ class Class extends _SymbolTypes implements Renderable {
             var nameReplacement = NAME_REPLACEMENTS[data["name"]];
             
             if (names.contains(nameReplacement) ||
-                childData.map((data) => data["name"]).contains(nameReplacement))
+                childData.map((data) => data["name"]).contains(nameReplacement)) {
               continue;
+            }
                 
             name = nameReplacement;
             data["name"] = name;
@@ -124,7 +124,9 @@ class Class extends _SymbolTypes implements Renderable {
           final bool isDefaultConstructor = name == this.data["name"];
           final bool isConstructor = isDefaultConstructor || name.startsWith("${this.data["name"]}.");
           
-          if (isConstructor && !isTopLevel) continue;
+          if (isConstructor && !isTopLevel) {
+            continue;
+          }
           
           final params = _getParamsFromInfo(compiler, data,
               compiler.analyzer.getFunctionParameters(
@@ -133,38 +135,40 @@ class Class extends _SymbolTypes implements Renderable {
 
           // if unnamed or named constructor
           if (isConstructor) {
-            var buf = isDefaultConstructor ? constructor : global;
+            final buffer = isDefaultConstructor ? constructor : global;
             
             if (isDefaultConstructor) {
-              buf.write("this[$symDartObj] = ");
+              buffer.write("this[$symDartObj] = ");
             } else {
               final String className = this.data["name"];
               final String constructorName = name.substring(className.length + 1);
               
-              buf.write("""
+              buffer.write("""
                 mdex.$className.$constructorName = function() {
                   var classObj = Object.create(mdex.$className.prototype);
                   classObj[$symDartObj] = 
               """);
             }
 
-            final code = data["code"] == null || data["code"].length == 0
+            final code = data["code"] == null || data["code"].isEmpty
                 ? "function(){}"
                 : "${compiler.mangledNames.getLibraryObject(libraryName)}.${data["code"].split(":")[0].trim()}";
             
-            (new Func(data,
-                    params,
-                    code: code,
-                    withSemicolon: false,
-                    transform: FunctionTransformation.NONE))
-                .render(compiler, buf);
-                
-            buf.write(".apply(this, arguments);");
+            final funcRenderable = new Func(data,
+                params,
+                code: code,
+                withSemicolon: false,
+                transform: FunctionTransformation.NONE);
             
-            if (isDefaultConstructor)
+            funcRenderable.render(compiler, buffer);
+                
+            buffer.write(".apply(this, arguments);");
+            
+            if (isDefaultConstructor) {
               continue;
+            }
               
-            buf.write("""
+            buffer.write("""
                 classObj[$symDartObj][$symBackup] = {};
                 classObj[$symDartObj][$symJsObj] = this;
                 return classObj;
@@ -176,21 +180,25 @@ class Class extends _SymbolTypes implements Renderable {
 
           // defer handling of getters/setters
           
-          if (c != null && c.getters.contains(data["name"]) &&
-              params.length == 0) {
-            if (!accessors.contains(name)) accessors.add(name);
+          if (c != null && c.getters.contains(data["name"]) && params.isEmpty) {
+            if (!accessors.contains(name)) {
+              accessors.add(name);
+            }
+            
             getters[name] = data;
             continue;
           }
 
-          if (c != null && c.setters.contains(data["name"]) &&
-              params.length == 1) {
-            if (!accessors.contains(name)) accessors.add(name);
+          if (c != null && c.setters.contains(data["name"]) && params.length == 1) {
+            if (!accessors.contains(name)) {
+              accessors.add(name);
+            }
+            
             setters[name] = data;
             continue;
           }
 
-          if (data["code"].length > 0) {
+          if (data["code"].isNotEmpty) {
             if (data["modifiers"]["static"] || data["modifiers"]["factory"]) {
               if (isTopLevel) {
                 (new Func(data, params,
@@ -238,16 +246,21 @@ class Class extends _SymbolTypes implements Renderable {
         }
 
         if (type == "field") {
-          if (names.contains(name) || name.startsWith("_")) continue;
+          if (names.contains(name) || name.startsWith("_")) {
+            continue;
+          }
+          
           names.add(name);
 
           // TODO: static fields
-          if (c == null || c.staticFields.contains(name)) continue;
+          if (c == null || c.staticFields.contains(name)) {
+            continue;
+          }
           
           final codeParts = data["code"]
               .split("\n")
               .where((name) =>
-                  name.length > 0 &&
+                  name.isNotEmpty &&
                   !name.contains(" ") &&
                   name.contains(_FIELD_REGEX))
               .map((name) {
@@ -285,12 +298,14 @@ class Class extends _SymbolTypes implements Renderable {
           var pOutput = new StringBuffer();
           pOutput.write("(");
           
-          (new Func(getters[accessor],
-                  _getParamsFromInfo(compiler, getters[accessor]),
-                  binding: "this[$symDartObj]",
-                  transform: FunctionTransformation.NONE,
-                  withSemicolon: false))
-              .render(compiler, pOutput);
+          final funcRenderable = new Func(getters[accessor],
+            _getParamsFromInfo(compiler, getters[accessor]),
+            binding: "this[$symDartObj]",
+            transform: FunctionTransformation.NONE,
+            withSemicolon: false);
+            
+          funcRenderable.render(compiler, pOutput);
+          
           pOutput.write(").apply(this, arguments)");
 
           compiler.baseTransformer
