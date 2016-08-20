@@ -4,8 +4,8 @@ final RegExp _FIELD_REGEX = new RegExp(r"[A-Za-z_0-9$]+(?=[^:A-Za-z]|$),*");
 
 class Class extends _SymbolTypes implements Renderable {
   // used by the analysis part of calzone
-  final Map<String, List<Parameter>> functions = {}; 
-  
+  final Map<String, List<Parameter>> functions = {};
+
   final String name;
   final String libraryName;
 
@@ -15,7 +15,7 @@ class Class extends _SymbolTypes implements Renderable {
 
   // list of classes that this class inherits from
   final List<String> inheritedFrom;
-  
+
   // data from .info.json
   Map<String, dynamic> data;
 
@@ -28,20 +28,20 @@ class Class extends _SymbolTypes implements Renderable {
   renderDefinition(StringBuffer output, String name,
       StringBuffer constructor, StringBuffer prototype,
       List<StringBuffer> methodChecks) {
-    
+
     output.write("""
       mdex.$name = function() {
         $constructor
 
         this[$symDartObj][$symBackup] = {};
         this[$symDartObj][$symJsObj] = this;
-        
+
         var proto = mdex.$name.prototype;
         if(Object.getPrototypeOf(this) !== proto) {
     """);
-    
+
     methodChecks.forEach((check) => output.write(check.toString()));
-    
+
     output.write("""
         }
       };
@@ -57,10 +57,11 @@ class Class extends _SymbolTypes implements Renderable {
         };
       """);
     }
-  
-    output.write("mdex.$name.prototype[$symIsWrapped] = true;");
 
     output.write("""
+      mdex.$name.prototype[$symIsWrapped] = true;
+      mdex.$name.prototype["constructor"] = mdex.$name;
+
       mdex.$name.class = function() {
         function $name() {
           mdex.$name.apply(this, arguments);
@@ -99,7 +100,7 @@ class Class extends _SymbolTypes implements Renderable {
 
       for (var index = 0; index < childData.length; index++) {
         final data = childData[index];
-        
+
         final type = data["kind"];
         String name = data["name"];
 
@@ -109,12 +110,12 @@ class Class extends _SymbolTypes implements Renderable {
           // name replacements for operator overloading functions
           if (NAME_REPLACEMENTS.containsKey(data["name"])) {
             var nameReplacement = NAME_REPLACEMENTS[data["name"]];
-            
+
             if (names.contains(nameReplacement) ||
                 childData.map((data) => data["name"]).contains(nameReplacement)) {
               continue;
             }
-                
+
             name = nameReplacement;
             data["name"] = name;
           }
@@ -123,11 +124,11 @@ class Class extends _SymbolTypes implements Renderable {
 
           final bool isDefaultConstructor = name == this.data["name"];
           final bool isConstructor = isDefaultConstructor || name.startsWith("${this.data["name"]}.");
-          
+
           if (isConstructor && !isTopLevel) {
             continue;
           }
-          
+
           final params = _getParamsFromInfo(compiler, data,
               compiler.analyzer.getFunctionParameters(
                   c.libraryName, isConstructor ? this.data["name"] : data["name"],
@@ -136,55 +137,55 @@ class Class extends _SymbolTypes implements Renderable {
           // if unnamed or named constructor
           if (isConstructor) {
             final buffer = isDefaultConstructor ? constructor : global;
-            
+
             if (isDefaultConstructor) {
               buffer.write("this[$symDartObj] = ");
             } else {
               final String className = this.data["name"];
               final String constructorName = name.substring(className.length + 1);
-              
+
               buffer.write("""
                 mdex.$className.$constructorName = function() {
                   var classObj = Object.create(mdex.$className.prototype);
-                  classObj[$symDartObj] = 
+                  classObj[$symDartObj] =
               """);
             }
 
             final code = data["code"] == null || data["code"].isEmpty
                 ? "function(){}"
                 : "${compiler.mangledNames.getLibraryObject(libraryName)}.${data["code"].split(":")[0].trim()}";
-            
+
             final funcRenderable = new Func(data,
                 params,
                 code: code,
                 withSemicolon: false,
                 transform: FunctionTransformation.NONE);
-            
+
             funcRenderable.render(compiler, buffer);
-                
+
             buffer.write(".apply(this, arguments);");
-            
+
             if (isDefaultConstructor) {
               continue;
             }
-              
+
             buffer.write("""
                 classObj[$symDartObj][$symBackup] = {};
                 classObj[$symDartObj][$symJsObj] = this;
                 return classObj;
               };
             """);
-            
+
             continue;
           }
 
           // defer handling of getters/setters
-          
+
           if (c != null && c.getters.contains(data["name"]) && params.isEmpty) {
             if (!accessors.contains(name)) {
               accessors.add(name);
             }
-            
+
             getters[name] = data;
             continue;
           }
@@ -193,7 +194,7 @@ class Class extends _SymbolTypes implements Renderable {
             if (!accessors.contains(name)) {
               accessors.add(name);
             }
-            
+
             setters[name] = data;
             continue;
           }
@@ -249,14 +250,14 @@ class Class extends _SymbolTypes implements Renderable {
           if (names.contains(name) || name.startsWith("_")) {
             continue;
           }
-          
+
           names.add(name);
 
           // TODO: static fields
           if (c == null || c.staticFields.contains(name)) {
             continue;
           }
-          
+
           final codeParts = data["code"]
               .split("\n")
               .where((name) =>
@@ -273,13 +274,13 @@ class Class extends _SymbolTypes implements Renderable {
                 }
               })
               .toList();
-            
+
           final mangledName = codeParts.firstWhere((name) => mangledFields.contains(name));
 
           if (mangledName == null) {
             throw "$name: $code: $mangledFields";
           }
-            
+
           prototype.write("get $name() {");
           compiler.baseTransformer.handleReturn(
               prototype, "this[$symDartObj].$mangledName", data["type"]);
@@ -297,15 +298,15 @@ class Class extends _SymbolTypes implements Renderable {
 
           var pOutput = new StringBuffer();
           pOutput.write("(");
-          
+
           final funcRenderable = new Func(getters[accessor],
             _getParamsFromInfo(compiler, getters[accessor]),
             binding: "this[$symDartObj]",
             transform: FunctionTransformation.NONE,
             withSemicolon: false);
-            
+
           funcRenderable.render(compiler, pOutput);
-          
+
           pOutput.write(").apply(this, arguments)");
 
           compiler.baseTransformer
@@ -315,17 +316,17 @@ class Class extends _SymbolTypes implements Renderable {
 
         if (setters[accessor] != null) {
           prototype.write("set $accessor(v) {");
-          
+
           compiler.baseTransformer
               .transformTo(prototype, "v", setters[accessor]["type"]);
-        
+
           prototype.write("(");
-          
+
           (new Func(setters[accessor],
                   _getParamsFromInfo(compiler, setters[accessor]),
                   binding: "this[clOb]", withSemicolon: false))
               .render(compiler, prototype);
-          
+
           prototype.write(").call(this, v);},");
         } else if (getters[accessor] != null) {
           // workaround to make any accessor settable
@@ -355,7 +356,7 @@ class Class extends _SymbolTypes implements Renderable {
                     .classes[classObj.libraryName + "." + superClass].key.data,
             isTopLevel: false);
     });
-    
+
     renderDefinition(output, name, constructor, prototype, methods);
 
     output.write(global.toString());
