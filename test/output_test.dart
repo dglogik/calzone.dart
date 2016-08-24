@@ -5,8 +5,10 @@ import "dart:convert";
 import "package:test/test.dart";
 import "package:logging/logging.dart";
 
-import "package:calzone/transformers.dart";
 import "package:calzone/builder.dart";
+import "package:calzone/transformers.dart";
+
+import "package:calzone/visitor_typescript.dart";
 
 Map<String, dynamic> nodeJson = {};
 
@@ -51,6 +53,8 @@ main() async {
 }
 
 Future setup() async {
+  TypeScriptCompilerVisitor tsVisitor = new TypeScriptCompilerVisitor("test");
+  
   var builder = new Builder("test/lib/test.c.dart",
       ["calzone.test.a", "calzone.test.b", "calzone.test.c"],
       typeTransformers: [
@@ -60,11 +64,19 @@ Future setup() async {
         // important that collections transformer is last
         new CollectionsTransformer()
       ],
+      compilerVisitors: [
+        tsVisitor
+      ],
       directory: "test/temp",
-      isMinified: false);
+      isMinified: true);
 
   var file = new File("test/temp/index.js");
   file.writeAsStringSync(await builder.build());
+  
+  if (tsVisitor.hasOutput) {
+    var tsFile = new File("test/temp/test.d.ts");
+    tsFile.writeAsStringSync(await tsVisitor.output);
+  }
 
   var stdout = Process.runSync("node", ["test/output_test.js"]).stdout;
   nodeJson = JSON.decode(stdout);

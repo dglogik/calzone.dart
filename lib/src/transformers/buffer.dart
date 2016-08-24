@@ -8,7 +8,10 @@ part of calzone.transformers;
  * your stub file, and "dart.typed_data.ByteData" to your @MirrorsUsed
  * declaration.
  */
-class BufferTransformer implements TypeTransformer {
+class BufferTransformer implements TypeTransformer, NamedTypeTransformer {
+  final List<String> types = ["ByteData"];
+  final String output = "Buffer";
+  
   BufferTransformer();
 
   @override

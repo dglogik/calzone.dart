@@ -113,7 +113,7 @@ describe('transformers.base', function() {
 });
 
 describe('inheritance', function() {
-  var _super = T.ClassTest.class;
+  var _super = T.ClassTest;
 
   function InheritanceTest() {
     _super.call(this);

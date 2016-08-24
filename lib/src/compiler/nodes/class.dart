@@ -77,6 +77,9 @@ class Class extends _SymbolTypes implements Renderable {
   }
 
   render(Compiler compiler, StringBuffer output) {
+    if (data["modifiers"]["abstract"])
+      return;
+      
     // list of function/field names in the class
     final List<String> names = [];
     final List<StringBuffer> methods = [];
@@ -106,6 +109,8 @@ class Class extends _SymbolTypes implements Renderable {
 
         if (type == "function") {
           if (names.contains(name) || name.startsWith("_")) continue;
+          
+          final _returnType = _TYPE_REGEX.firstMatch(data["type"]).group(2);
 
           // name replacements for operator overloading functions
           if (NAME_REPLACEMENTS.containsKey(data["name"])) {
@@ -122,8 +127,8 @@ class Class extends _SymbolTypes implements Renderable {
 
           names.add(name);
 
-          final bool isDefaultConstructor = name == this.data["name"];
-          final bool isConstructor = isDefaultConstructor || name.startsWith("${this.data["name"]}.");
+          final bool isDefaultConstructor = name == memberData["name"];
+          final bool isConstructor = isDefaultConstructor || name.startsWith("${memberData["name"]}.");
 
           if (isConstructor && !isTopLevel) {
             continue;
@@ -166,7 +171,15 @@ class Class extends _SymbolTypes implements Renderable {
             buffer.write(".apply(this, arguments);");
 
             if (isDefaultConstructor) {
+              for (CompilerVisitor visitor in compiler.compilerVisitors) {
+                visitor.addClassConstructor(data, params);
+              }
+              
               continue;
+            } else {
+              for (CompilerVisitor visitor in compiler.compilerVisitors) {
+                visitor.addClassStaticFunction(data, params, _returnType);
+              }
             }
 
             buffer.write("""
@@ -206,6 +219,10 @@ class Class extends _SymbolTypes implements Renderable {
                         code: "init.allClasses.${data["code"].split(":")[0]}",
                         prefix: "mdex.${this.data["name"]}"))
                     .render(compiler, global);
+                    
+                for (CompilerVisitor visitor in compiler.compilerVisitors) {
+                  visitor.addClassStaticFunction(data, params, _returnType);
+                }
               }
             } else {
               if (data["name"] == "get" || data["name"] == "set") {
@@ -225,6 +242,10 @@ class Class extends _SymbolTypes implements Renderable {
                         withSemicolon: false))
                     .render(compiler, prototype);
                 prototype.write(",");
+              }
+              
+              for (CompilerVisitor visitor in compiler.compilerVisitors) {
+                visitor.addClassFunction(data, params, _returnType);
               }
 
               StringBuffer buf = new StringBuffer();
@@ -278,7 +299,7 @@ class Class extends _SymbolTypes implements Renderable {
           final mangledName = codeParts.firstWhere((name) => mangledFields.contains(name));
 
           if (mangledName == null) {
-            throw "$name: $code: $mangledFields";
+            throw "$name: $codeParts: $mangledFields";
           }
 
           prototype.write("get $name() {");
@@ -289,10 +310,19 @@ class Class extends _SymbolTypes implements Renderable {
           prototype.write("set $name(v) {");
           compiler.baseTransformer.transformTo(prototype, "v", data["type"]);
           prototype.write("this[$symDartObj].$mangledName = v;},");
+          
+          for (CompilerVisitor visitor in compiler.compilerVisitors) {
+            visitor.addClassMember(data);
+          }
         }
       }
 
       for (var accessor in accessors) {
+        for (CompilerVisitor visitor in compiler.compilerVisitors) {
+          visitor.addClassMember(getters[accessor] != null ? getters[accessor] :
+            setters[accessor]);
+        }
+
         if (getters[accessor] != null) {
           prototype.write("get $accessor() {");
 
@@ -343,6 +373,10 @@ class Class extends _SymbolTypes implements Renderable {
       }
     }
 
+    for (CompilerVisitor visitor in compiler.compilerVisitors) {
+      visitor.startClass(this.data);
+    }
+
     _handleClassChildren(this, data);
 
     this.inheritedFrom.forEach((superClass) {
@@ -358,6 +392,10 @@ class Class extends _SymbolTypes implements Renderable {
     });
 
     renderDefinition(output, name, constructor, prototype, methods);
+
+    for (CompilerVisitor visitor in compiler.compilerVisitors) {
+      visitor.stopClass();
+    }
 
     output.write(global.toString());
   }

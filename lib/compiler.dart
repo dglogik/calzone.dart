@@ -13,6 +13,28 @@ part "src/compiler/compiler.dart";
 part "src/compiler/nodes/class.dart";
 part "src/compiler/nodes/function.dart";
 
+abstract class CompilerVisitor {
+  void startCompilation(Compiler compiler);
+  
+  void stopCompilation();
+  
+  void addTopLevelFunction(Map<String, dynamic> data, List<Parameter> parameters, String returnType);
+  
+  void startClass(Map<String, dynamic> data);
+  
+  void addClassConstructor(Map<String, dynamic> data, List<Parameter> parameters);
+  
+  void addClassStaticFunction(Map<String, dynamic> data, List<Parameter> parameters, String returnType);
+  
+  void addClassFunction(Map<String, dynamic> data, List<Parameter> parameters, String returnType);
+  
+  void addClassStaticMember(Map<String, dynamic> data);
+  
+  void addClassMember(Map<String, dynamic> data);
+  
+  void stopClass();
+}
+
 const Map<String, String> NAME_REPLACEMENTS = const {
   "[]": "get",
   "[]=": "set",
@@ -258,7 +280,11 @@ class Parameter {
   Parameter(this.kind, [this.type = "dynamic", this.name, this.defaultValue]);
 }
 
-List<dynamic> _getTypeTree(String type) {
+String getType(String str) => _getTypeTree(str)[0];
+
+List<String> getTypeTree(String type) => _getTypeTree(type);
+
+List<String> _getTypeTree(String type) {
   var tree = [];
 
   Match match = _TREE_REGEX.firstMatch(type);
@@ -287,11 +313,17 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
   var isOptional = false;
   var isPositional = false;
 
-  if (type.length <= 0) return [];
+  if (type.length <= 0) {
+    return [];
+  }
 
   List<String> p = type.split(_COMMA_REGEX)
     ..removeWhere((piece) => piece.trim().length == 0);
-  if (p == null || p.length == 0) return [];
+  
+  if (p == null || p.length == 0) {
+    return [];
+  }
+  
   List<Parameter> parameters = p.map((String piece) {
     int index = p.indexOf(piece);
     piece = piece.trim();
@@ -300,6 +332,7 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
       isPositional = true;
       piece = piece.substring(1);
     }
+    
     if (piece.endsWith("]")) {
       piece = piece.substring(0, piece.length - 1);
     }
@@ -345,12 +378,13 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
 
     var actualName = null;
     var split = piece.split(_SPACE_REGEX);
+    
     if (split.length > 1) {
       piece = split[0];
       actualName = split[1];
     } else {
       var c = _getTypeTree(split[0])[0];
-      if (c != "Function" &&
+      if (c != "Function" && c != "List" && c != "Iterable" && c != "Map" && 
           !compiler.classes.containsKey(c) &&
           c != "dynamic" &&
           !PRIMITIVES.contains(c) &&
@@ -368,7 +402,7 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
         }
       }
     }
-
+    
     ParameterKind kind = isOptional
         ? ParameterKind.NAMED
         : (isPositional ? ParameterKind.POSITIONAL : ParameterKind.REQUIRED);

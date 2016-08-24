@@ -13,6 +13,8 @@ class Compiler {
   // list of TypeTransformers used within the Compiler instance
   final List<TypeTransformer> typeTransformers;
 
+  final List<CompilerVisitor> compilerVisitors;
+
   // the base (or god, it's kind of a god object) type transformer
   BaseTypeTransformer baseTransformer;
 
@@ -25,7 +27,9 @@ class Compiler {
   bool isMinified;
 
   Compiler(String dartFile, dynamic infoFile, dynamic mangledFile,
-      {this.typeTransformers: const [], this.isMinified: false})
+      {this.typeTransformers: const [],
+        this.compilerVisitors: const [],
+        this.isMinified: false})
       : info = new InfoData(infoFile is String
             ? JSON.decode(new File(infoFile).readAsStringSync())
             : infoFile),
@@ -41,6 +45,7 @@ class Compiler {
       : info = new InfoData(null),
         mangledNames = new MangledNames(null),
         typeTransformers = const [],
+        compilerVisitors = const [],
         isMinified = false {
     analyzer = new Analyzer(this, dartFile);
     baseTransformer = new BaseTypeTransformer(this);
@@ -48,6 +53,10 @@ class Compiler {
 
   String compile(List<String> include) {
     StringBuffer output = new StringBuffer();
+    
+    for (CompilerVisitor visitor in compilerVisitors) {
+      visitor.startCompilation(this);
+    }
 
     List<Renderable> children = [];
     for (var library in info.getLibraries()) {
@@ -81,6 +90,12 @@ class Compiler {
               childData,
               analyzer.getFunctionParameters(
                   library["name"], childData["name"]));
+
+          final _returnType = _TYPE_REGEX.firstMatch(childData["type"]).group(2);          
+          for (CompilerVisitor visitor in compilerVisitors) {
+            visitor.addTopLevelFunction(childData, params, _returnType);
+          }
+                  
           children.add(new Func(childData, params,
               binding: "init.globalFunctions",
               prefix: "mdex",
@@ -123,6 +138,10 @@ class Compiler {
     children.forEach((c) {
       if (!c.data["name"].startsWith("_")) c.render(this, output);
     });
+
+    for (CompilerVisitor visitor in compilerVisitors) {
+      visitor.stopCompilation();
+    }
 
     return globals.join() + output.toString();
   }

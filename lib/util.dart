@@ -17,6 +17,11 @@ abstract class TypeTransformer {
   void transformFromDart(Compiler compiler, StringBuffer output);
 }
 
+abstract class NamedTypeTransformer {
+  List<String> get types;
+  String get output;
+}
+
 // for when types cannot be converted at runtime by dynamicTo/dynamicFrom
 abstract class StaticTypeTransformer {
   List<String> get types;
