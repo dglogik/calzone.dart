@@ -17,22 +17,46 @@ final Map<dynamic, String> _baseTypes = <String, String>{
   "Function": "any"
 };
 
-class _DualStringBuffer {
+class _ClassStringBuffer {
+  final String name;
+  
   StringBuffer prefix = new StringBuffer();
+  
+  StringBuffer variables = new StringBuffer();
+  StringBuffer constructor = new StringBuffer();
   StringBuffer content = new StringBuffer();
   
-  _DualStringBuffer();
+  _ClassStringBuffer(this.name);
   
   writelnPrefix(String text) => prefix.writeln(text);
   
+  writelnVariables(String text) => variables.writeln(text);
+  writelnConstructor(String text) => constructor.writeln(text);
   writeln(String text) => content.writeln(text);
   
   String toString() {
-    if (prefix.isEmpty) {
-      return content.toString();
+    StringBuffer output = new StringBuffer();
+    
+    if (!prefix.isEmpty) {
+      output.writeln(prefix);
     }
     
-    return "${prefix}\n\n${content}";
+    output.write("\n\tclass $name {");
+    
+    if (!variables.isEmpty) {
+      output.write("\n$variables");
+    }
+    
+    if (!constructor.isEmpty) {
+      output.write("\n$constructor");
+    }
+    
+    if (!content.isEmpty) {
+      output.write("\n$content");
+    }
+    
+    output.write("\t}");
+    return output.toString();
   }
 }
 
@@ -45,8 +69,7 @@ class TypeScriptCompilerVisitor extends CompilerVisitor {
     
   StringBuffer _buffer;
   
-  _DualStringBuffer _classBuffer;
-  String _className;
+  _ClassStringBuffer _classBuffer;
   
   Map<dynamic, String> _types; 
   
@@ -125,29 +148,24 @@ declare module "$moduleName" {
   }
   
   startClass(Map<String, dynamic> data) {
-    _classBuffer = new _DualStringBuffer();
-    _className = data["name"];
-    
-    _classBuffer.writeln("\tclass ${data["name"]} {");
+    _classBuffer = new _ClassStringBuffer(data["name"]);
   }
   
-  stopClass() {
-    _classBuffer.writeln("\t}");
-    
-    _buffer.write("\n$_classBuffer");
+  stopClass() {    
+    _buffer.writeln(_classBuffer);
     _classBuffer = null;
   }
   
   addClassConstructor(Map<String, dynamic> data, List<Parameter> parameters) {
-    _classBuffer.writeln("\t\tconstructor(${_handleParams(parameters)});");
+    _classBuffer.writelnConstructor("\t\tconstructor(${_handleParams(parameters)});");
   }
   
   addClassStaticFunction(Map<String, dynamic> data, List<Parameter> parameters, String returnType) {
-    var name = data["name"].contains(_className + ".") ?
-      (data["name"] as String).substring(_className.length + 1) :
+    var name = data["name"].contains(_classBuffer.name + ".") ?
+      (data["name"] as String).substring(_classBuffer.name.length + 1) :
       data["name"];
     final str = _makeFunction(data, parameters, returnType, name); 
-    _classBuffer.writeln("\t\tstatic $str");
+    _classBuffer.writelnConstructor("\t\tstatic $str");
   }
   
   addClassFunction(Map<String, dynamic> data, List<Parameter> parameters, String returnType) {
@@ -159,13 +177,13 @@ declare module "$moduleName" {
     final name = data["name"];
     final type = data["type"];
     
-    _classBuffer.writeln("\t\tstatic $name: ${_handleType(type)};");
+    _classBuffer.writelnVariables("\t\tstatic $name: ${_handleType(type)};");
   }
   
   addClassMember(Map<String, dynamic> data) {
     final name = data["name"];
     final type = data["type"];
     
-    _classBuffer.writeln("\t\t$name: ${_handleType(type)};");
+    _classBuffer.writelnVariables("\t\t$name: ${_handleType(type)};");
   }
 }
