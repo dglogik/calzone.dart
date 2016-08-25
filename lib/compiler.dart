@@ -20,7 +20,9 @@ abstract class CompilerVisitor {
   
   void addTopLevelFunction(Map<String, dynamic> data, List<Parameter> parameters, String returnType);
   
-  void startClass(Map<String, dynamic> data);
+  void addAbstractClass(Map<String, dynamic> data);
+  
+  void startClass(Map<String, dynamic> data, List<String> inheritedFrom);
   
   void addClassConstructor(Map<String, dynamic> data, List<Parameter> parameters);
   
@@ -324,8 +326,8 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
     return [];
   }
   
+  int index = 0;
   List<Parameter> parameters = p.map((String piece) {
-    int index = p.indexOf(piece);
     piece = piece.trim();
 
     if (piece.startsWith("[")) {
@@ -407,6 +409,7 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
         ? ParameterKind.NAMED
         : (isPositional ? ParameterKind.POSITIONAL : ParameterKind.REQUIRED);
 
+    index++;
     return new Parameter(kind, piece, actualName);
   }).toList();
 

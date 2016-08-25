@@ -15,6 +15,7 @@ class Class extends _SymbolTypes implements Renderable {
 
   // list of classes that this class inherits from
   final List<String> inheritedFrom;
+  final List<String> implementsFrom;
 
   // data from .info.json
   Map<String, dynamic> data;
@@ -23,7 +24,8 @@ class Class extends _SymbolTypes implements Renderable {
       {this.staticFields: const [],
       this.getters: const [],
       this.setters: const [],
-      this.inheritedFrom: const []});
+      this.inheritedFrom: const [],
+      this.implementsFrom: const []});
 
   renderDefinition(StringBuffer output, String name,
       StringBuffer constructor, StringBuffer prototype,
@@ -77,8 +79,13 @@ class Class extends _SymbolTypes implements Renderable {
   }
 
   render(Compiler compiler, StringBuffer output) {
-    if (data["modifiers"]["abstract"])
+    if (data["modifiers"]["abstract"]) {
+      for (CompilerVisitor visitor in compiler.compilerVisitors) {
+        visitor.addAbstractClass(this.data);
+      }
+      
       return;
+    }
       
     // list of function/field names in the class
     final List<String> names = [];
@@ -244,8 +251,10 @@ class Class extends _SymbolTypes implements Renderable {
                 prototype.write(",");
               }
               
-              for (CompilerVisitor visitor in compiler.compilerVisitors) {
-                visitor.addClassFunction(data, params, _returnType);
+              if (isTopLevel || memberData["name"] != inheritedFrom[0]) {
+                for (CompilerVisitor visitor in compiler.compilerVisitors) {
+                  visitor.addClassFunction(data, params, _returnType);
+                }  
               }
 
               StringBuffer buf = new StringBuffer();
@@ -311,16 +320,20 @@ class Class extends _SymbolTypes implements Renderable {
           compiler.baseTransformer.transformTo(prototype, "v", data["type"]);
           prototype.write("this[$symDartObj].$mangledName = v;},");
           
-          for (CompilerVisitor visitor in compiler.compilerVisitors) {
-            visitor.addClassMember(data);
+          if (isTopLevel || memberData["name"] != inheritedFrom[0]) {
+            for (CompilerVisitor visitor in compiler.compilerVisitors) {
+              visitor.addClassMember(data);
+            }
           }
         }
       }
 
       for (var accessor in accessors) {
-        for (CompilerVisitor visitor in compiler.compilerVisitors) {
-          visitor.addClassMember(getters[accessor] != null ? getters[accessor] :
-            setters[accessor]);
+        if (isTopLevel || memberData["name"] != inheritedFrom[0]) {
+          for (CompilerVisitor visitor in compiler.compilerVisitors) {
+            visitor.addClassMember(getters[accessor] != null ? getters[accessor] :
+              setters[accessor]);
+          }
         }
 
         if (getters[accessor] != null) {
@@ -374,7 +387,7 @@ class Class extends _SymbolTypes implements Renderable {
     }
 
     for (CompilerVisitor visitor in compiler.compilerVisitors) {
-      visitor.startClass(this.data);
+      visitor.startClass(this.data, inheritedFrom);
     }
 
     _handleClassChildren(this, data);

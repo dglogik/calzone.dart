@@ -43,13 +43,23 @@ main() {
   });
 
   test("Class.inheritedFrom", () {
-    expect(analyzer.getClass("calzone.test.b", "D").inheritedFrom, equals([]));
-    expect(
-        analyzer.getClass("calzone.test.a", "C").inheritedFrom, equals(["D"]));
+    expect(analyzer.getClass("calzone.test.b", "D").inheritedFrom,
+        equals([]));
+    expect(analyzer.getClass("calzone.test.a", "C").inheritedFrom,
+        equals([]));
     expect(analyzer.getClass("calzone.test.a", "B").inheritedFrom,
-        equals(["C", "D"]));
+        equals(["C"]));
     expect(analyzer.getClass("calzone.test.a", "A").inheritedFrom,
-        equals(["B", "C", "D"]));
+        equals(["B", "C"]));
+  });
+  
+  test("Class.implementsFrom", () {
+    expect(analyzer.getClass("calzone.test.a", "C").implementsFrom,
+        equals(["D"]));
+    expect(analyzer.getClass("calzone.test.a", "B").implementsFrom,
+        equals([]));
+    expect(analyzer.getClass("calzone.test.a", "A").implementsFrom,
+        equals([]));
   });
 
   test("Class.getters", () {

@@ -85,6 +85,11 @@ class Compiler {
         }
 
         if (type == "function" && isIncluded) {
+          if (childData["name"].startsWith("_"))
+          {
+            continue;
+          }
+          
           var params = _getParamsFromInfo(
               this,
               childData,

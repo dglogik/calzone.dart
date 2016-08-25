@@ -13,12 +13,15 @@ final Map<dynamic, String> _baseTypes = <String, String>{
   "int": "number",
   "num": "number",
   "Map": "any",
+  "DateTime": "Date",
   "LinkedHashMap": "any",
-  "Function": "any"
+  "Function": "any",
+  "Object": "any"
 };
 
 class _ClassStringBuffer {
   final String name;
+  final String inherits;
   
   StringBuffer prefix = new StringBuffer();
   
@@ -26,7 +29,7 @@ class _ClassStringBuffer {
   StringBuffer constructor = new StringBuffer();
   StringBuffer content = new StringBuffer();
   
-  _ClassStringBuffer(this.name);
+  _ClassStringBuffer(this.name, this.inherits);
   
   writelnPrefix(String text) => prefix.writeln(text);
   
@@ -41,7 +44,12 @@ class _ClassStringBuffer {
       output.write("\n$prefix");
     }
     
-    output.write("\n\tclass $name {");
+    var classDef = "class $name";
+    if (inherits.isNotEmpty) {
+      classDef += " extends $inherits";
+    }
+    
+    output.write("\n\t$classDef {");
     
     if (!variables.isEmpty) {
       output.write("\n$variables");
@@ -62,6 +70,7 @@ class _ClassStringBuffer {
 
 class TypeScriptCompilerVisitor extends CompilerVisitor {
   final String moduleName;
+  final String mixinTypes;
   
   String _output;
   String get output => _output;
@@ -73,11 +82,15 @@ class TypeScriptCompilerVisitor extends CompilerVisitor {
   
   Map<dynamic, String> _types; 
   
-  TypeScriptCompilerVisitor(this.moduleName);
+  TypeScriptCompilerVisitor(this.moduleName, { this.mixinTypes : "" });
   
   startCompilation(Compiler compiler) {
     _buffer = new StringBuffer();
     _buffer.writeln("declare namespace __$moduleName {");
+    
+    if (!mixinTypes.isEmpty) {
+      _buffer.write("$mixinTypes\n");
+    }
     
     _types = new Map.from(_baseTypes);
     
@@ -169,8 +182,12 @@ declare module "$moduleName" {
     _buffer.writeln("\tfunction $str");
   }
   
-  startClass(Map<String, dynamic> data) {
-    _classBuffer = new _ClassStringBuffer(data["name"]);
+  addAbstractClass(Map<String, dynamic> data) {
+    _buffer.writeln("\n\tinterface ${data["name"]} {\n\t}");
+  }
+  
+  startClass(Map<String, dynamic> data, List<String> inheritedFrom) {
+    _classBuffer = new _ClassStringBuffer(data["name"], inheritedFrom.isNotEmpty ? inheritedFrom[0] : "");
   }
   
   stopClass() {    
