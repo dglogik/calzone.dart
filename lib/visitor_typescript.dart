@@ -38,7 +38,7 @@ class _ClassStringBuffer {
     StringBuffer output = new StringBuffer();
     
     if (!prefix.isEmpty) {
-      output.writeln(prefix);
+      output.write("\n$prefix");
     }
     
     output.write("\n\tclass $name {");
@@ -123,27 +123,49 @@ declare module "$moduleName" {
     return tree[0];
   }
   
-  String _handleParams(List<Parameter> parameters) =>
-    parameters
-      .map((Parameter param) {
-        var suffix = param.kind == ParameterKind.POSITIONAL ? "?" : "";      
+  String _handleParams(List<Parameter> parameters,
+      String optName, StringBuffer optBuffer) {
+    List<String> paramList = [];
+    
+    StringBuffer options = new StringBuffer();
+    
+    for (var param in parameters) {
+      if (param.kind == ParameterKind.NAMED) {
+        if (options.isEmpty) {
+          options.writeln("\tinterface $optName {");
+        }
         
-        return "${param.name}$suffix: ${_handleType(param.type)}";
-      })
-      .join(", ");
+        options.writeln("\t\t${param.name}?: ${_handleType(param.type)};");
+        continue;
+      }
+      
+      var suffix = param.kind == ParameterKind.POSITIONAL ? "?" : "";      
+      
+      paramList.add("${param.name}$suffix: ${_handleType(param.type)}");
+    }
+    
+    if (!options.isEmpty) {
+      paramList.add("_opt?: $optName");
+      options.write("\t}");
+      
+      optBuffer.writeln(options);
+    }
+
+    return paramList.join(", ");
+  }
   
   String _makeFunction(Map<String, dynamic> data, List<Parameter> parameters, String returnType,
-      [String subName]) {
+      String optName, StringBuffer optBuffer, { String subName }) {
     var name = subName != null ? subName : data["name"];
     
     returnType = _handleType(returnType);
-    var paramStr = _handleParams(parameters);
+    var paramStr = _handleParams(parameters, optName, optBuffer);
     
     return "$name($paramStr): $returnType;";
   }
   
   addTopLevelFunction(Map<String, dynamic> data, List<Parameter> parameters, String returnType) {   
-    final str = _makeFunction(data, parameters, returnType); 
+    final str = _makeFunction(data, parameters, returnType, "_${data["name"]}_options", _buffer); 
     _buffer.writeln("\tfunction $str");
   }
   
@@ -157,19 +179,20 @@ declare module "$moduleName" {
   }
   
   addClassConstructor(Map<String, dynamic> data, List<Parameter> parameters) {
-    _classBuffer.writelnConstructor("\t\tconstructor(${_handleParams(parameters)});");
+    final paramList = _handleParams(parameters, "_${_classBuffer.name}_options", _classBuffer.prefix);
+    _classBuffer.writelnConstructor("\t\tconstructor($paramList);");
   }
   
   addClassStaticFunction(Map<String, dynamic> data, List<Parameter> parameters, String returnType) {
     var name = data["name"].contains(_classBuffer.name + ".") ?
       (data["name"] as String).substring(_classBuffer.name.length + 1) :
       data["name"];
-    final str = _makeFunction(data, parameters, returnType, name); 
+    final str = _makeFunction(data, parameters, returnType, "_${_classBuffer.name}_${name}_options", _classBuffer.prefix, subName: name); 
     _classBuffer.writelnConstructor("\t\tstatic $str");
   }
   
   addClassFunction(Map<String, dynamic> data, List<Parameter> parameters, String returnType) {
-    final str = _makeFunction(data, parameters, returnType); 
+    final str = _makeFunction(data, parameters, returnType, "_${_classBuffer.name}_${data["name"]}_options", _classBuffer.prefix); 
     _classBuffer.writeln("\t\t$str");
   }
   
