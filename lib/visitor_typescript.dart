@@ -6,7 +6,6 @@ import "package:calzone/compiler.dart";
 import "package:calzone/util.dart";
 
 final Map<dynamic, String> _baseTypes = <String, String>{
-  null: "void",
   "dynamic": "any",
   "String": "string",
   "bool": "boolean",
@@ -97,12 +96,13 @@ class TypeScriptCompilerVisitor extends CompilerVisitor {
     _types = new Map.from(_baseTypes);
     
     for (TypeTransformer transformer in compiler.typeTransformers) {
-      if (transformer is! NamedTypeTransformer)
+      if (transformer is! NamedTypeTransformer) {
         continue;
+      }
 
       var n = transformer as NamedTypeTransformer;
       for (var input in n.types) {
-          _types[input] = n.output;
+        _types[input] = n.output;
       }
     }
   }
@@ -121,13 +121,18 @@ declare module "$moduleName" {
   }
   
   String _handleType(String type) {
-    var tree = getTypeTree(type);
+    final tree = getTypeTree(type);
+    final firstType = tree[0];
+    
+    if (firstType == null) {
+      return "void";
+    }
 
-    if (_types.containsKey(tree[0])) {
-      return _types[tree[0]];
+    if (_types.containsKey(firstType)) {
+      return _types[firstType];
     }
         
-    if (tree[0] == "List" || tree[0] == "Iterable") {
+    if (const ["List", "Iterable"].contains(firstType)) {
       if (tree.length > 1) {
         return "${_handleType(tree[1])}[]";
       } else {
@@ -135,16 +140,16 @@ declare module "$moduleName" {
       }
     }
     
-    final obj = _compiler.analyzer.getClass(null, tree[0]);
+    final obj = _compiler.analyzer.getClass(null, firstType);
     if (obj == null)
       return "any";
       
-    if(!_compiler.includeDeclaration.contains(obj.libraryName + "." + tree[0]) &&
+    if(!_compiler.includeDeclaration.contains(obj.libraryName + "." + firstType) &&
         !_compiler.includeDeclaration.contains(obj.libraryName)) {
       return "any";
     }    
     
-    return tree[0];
+    return firstType;
   }
   
   String _handleParams(List<Parameter> parameters,
@@ -215,12 +220,15 @@ declare module "$moduleName" {
     var name = data["name"].contains(_classBuffer.name + ".") ?
       (data["name"] as String).substring(_classBuffer.name.length + 1) :
       data["name"];
-    final str = _makeFunction(data, parameters, returnType, "_${_classBuffer.name}_${name}_options", _classBuffer.prefix, subName: name); 
+    final str = _makeFunction(data, parameters, returnType,
+        "_${_classBuffer.name}_${name}_options", _classBuffer.prefix,
+        subName: name); 
     _classBuffer.writelnConstructor("\t\tstatic $str");
   }
   
   addClassFunction(Map<String, dynamic> data, List<Parameter> parameters, String returnType) {
-    final str = _makeFunction(data, parameters, returnType, "_${_classBuffer.name}_${data["name"]}_options", _classBuffer.prefix); 
+    final str = _makeFunction(data, parameters, returnType,
+        "_${_classBuffer.name}_${data["name"]}_options", _classBuffer.prefix); 
     _classBuffer.writeln("\t\t$str");
   }
   

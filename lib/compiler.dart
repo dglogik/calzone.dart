@@ -252,7 +252,7 @@ class InfoParent extends _JSONWrapper {
   }
 
   String getField(String name, Class c, List<String> fields) {
-    if (fields.length == 0) throw fields;
+    if (fields.isEmpty) throw fields;
 
     String value = "";
     int index = 0;
@@ -267,7 +267,7 @@ class InfoParent extends _JSONWrapper {
       index++;
     }
 
-    if (value.length == 0) throw childValues.length;
+    if (value.isEmpty) throw childValues.length;
     return value;
   }
 }
@@ -315,14 +315,14 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
   var isOptional = false;
   var isPositional = false;
 
-  if (type.length <= 0) {
+  if (type.isEmpty) {
     return [];
   }
 
   List<String> p = type.split(_COMMA_REGEX)
-    ..removeWhere((piece) => piece.trim().length == 0);
+    ..removeWhere((piece) => piece.trim().isEmpty);
   
-  if (p == null || p.length == 0) {
+  if (p == null || p.isEmpty) {
     return [];
   }
   
@@ -386,7 +386,7 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
       actualName = split[1];
     } else {
       var c = _getTypeTree(split[0])[0];
-      if (c != "Function" && c != "List" && c != "Iterable" && c != "Map" && 
+      if (!(const ["Function", "List", "Iterable", "Map"].contains(c)) &&
           !compiler.classes.containsKey(c) &&
           c != "dynamic" &&
           !PRIMITIVES.contains(c) &&

@@ -71,11 +71,11 @@ Future setup() async {
       isMinified: true);
 
   var file = new File("test/temp/index.js");
-  file.writeAsStringSync(await builder.build());
+  await file.writeAsString(await builder.build());
   
   if (tsVisitor.hasOutput) {
     var tsFile = new File("test/temp/test.d.ts");
-    tsFile.writeAsStringSync(await tsVisitor.output);
+    await tsFile.writeAsString(tsVisitor.output);
   }
 
   var stdout = Process.runSync("node", ["test/output_test.js"]).stdout;
