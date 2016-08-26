@@ -25,6 +25,8 @@ class Compiler {
   List<String> globals = [];
 
   bool isMinified;
+  
+  List<String> includeDeclaration = [];
 
   Compiler(String dartFile, dynamic infoFile, dynamic mangledFile,
       {this.typeTransformers: const [],
@@ -52,6 +54,7 @@ class Compiler {
   }
 
   String compile(List<String> include) {
+    includeDeclaration = include;
     StringBuffer output = new StringBuffer();
     
     for (CompilerVisitor visitor in compilerVisitors) {
@@ -85,8 +88,7 @@ class Compiler {
         }
 
         if (type == "function" && isIncluded) {
-          if (childData["name"].startsWith("_"))
-          {
+          if (childData["name"].startsWith("_")) {
             continue;
           }
           

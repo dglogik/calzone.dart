@@ -16,7 +16,7 @@ final String _PROMISE_PREFIX =
  */
 class PromiseTransformer implements TypeTransformer, NamedTypeTransformer {
   final List<String> types = ["Future"];
-  final String output = "Promise";
+  final String output = "Promise<any>";
   
   final bool _usePolyfill;
 

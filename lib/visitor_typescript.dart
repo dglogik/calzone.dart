@@ -12,10 +12,10 @@ final Map<dynamic, String> _baseTypes = <String, String>{
   "bool": "boolean",
   "int": "number",
   "num": "number",
-  "Map": "any",
   "DateTime": "Date",
+  "Function": "Function",
+  "Map": "any",
   "LinkedHashMap": "any",
-  "Function": "any",
   "Object": "any"
 };
 
@@ -76,6 +76,7 @@ class TypeScriptCompilerVisitor extends CompilerVisitor {
   String get output => _output;
   bool get hasOutput => _output != null;
     
+  Compiler _compiler;
   StringBuffer _buffer;
   
   _ClassStringBuffer _classBuffer;
@@ -85,6 +86,7 @@ class TypeScriptCompilerVisitor extends CompilerVisitor {
   TypeScriptCompilerVisitor(this.moduleName, { this.mixinTypes : "" });
   
   startCompilation(Compiler compiler) {
+    _compiler = compiler;
     _buffer = new StringBuffer();
     _buffer.writeln("declare namespace __$moduleName {");
     
@@ -132,6 +134,15 @@ declare module "$moduleName" {
         return "any[]";
       }
     }
+    
+    final obj = _compiler.analyzer.getClass(null, tree[0]);
+    if (obj == null)
+      return "any";
+      
+    if(!_compiler.includeDeclaration.contains(obj.libraryName + "." + tree[0]) &&
+        !_compiler.includeDeclaration.contains(obj.libraryName)) {
+      return "any";
+    }    
     
     return tree[0];
   }
@@ -183,7 +194,7 @@ declare module "$moduleName" {
   }
   
   addAbstractClass(Map<String, dynamic> data) {
-    _buffer.writeln("\n\tinterface ${data["name"]} {\n\t}");
+    _buffer.writeln("\n\tclass ${data["name"]} {\n\t}");
   }
   
   startClass(Map<String, dynamic> data, List<String> inheritedFrom) {
