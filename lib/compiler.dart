@@ -13,6 +13,30 @@ part "src/compiler/compiler.dart";
 part "src/compiler/nodes/class.dart";
 part "src/compiler/nodes/function.dart";
 
+abstract class CompilerVisitor {
+  void startCompilation(Compiler compiler);
+  
+  void stopCompilation();
+  
+  void addTopLevelFunction(Map<String, dynamic> data, List<Parameter> parameters, String returnType);
+  
+  void addAbstractClass(Map<String, dynamic> data);
+  
+  void startClass(Map<String, dynamic> data, List<String> inheritedFrom);
+  
+  void addClassConstructor(Map<String, dynamic> data, List<Parameter> parameters);
+  
+  void addClassStaticFunction(Map<String, dynamic> data, List<Parameter> parameters, String returnType);
+  
+  void addClassFunction(Map<String, dynamic> data, List<Parameter> parameters, String returnType);
+  
+  void addClassStaticMember(Map<String, dynamic> data);
+  
+  void addClassMember(Map<String, dynamic> data);
+  
+  void stopClass();
+}
+
 const Map<String, String> NAME_REPLACEMENTS = const {
   "[]": "get",
   "[]=": "set",
@@ -228,7 +252,7 @@ class InfoParent extends _JSONWrapper {
   }
 
   String getField(String name, Class c, List<String> fields) {
-    if (fields.length == 0) throw fields;
+    if (fields.isEmpty) throw fields;
 
     String value = "";
     int index = 0;
@@ -243,7 +267,7 @@ class InfoParent extends _JSONWrapper {
       index++;
     }
 
-    if (value.length == 0) throw childValues.length;
+    if (value.isEmpty) throw childValues.length;
     return value;
   }
 }
@@ -258,7 +282,11 @@ class Parameter {
   Parameter(this.kind, [this.type = "dynamic", this.name, this.defaultValue]);
 }
 
-List<dynamic> _getTypeTree(String type) {
+String getType(String str) => _getTypeTree(str)[0];
+
+List<String> getTypeTree(String type) => _getTypeTree(type);
+
+List<String> _getTypeTree(String type) {
   var tree = [];
 
   Match match = _TREE_REGEX.firstMatch(type);
@@ -287,19 +315,26 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
   var isOptional = false;
   var isPositional = false;
 
-  if (type.length <= 0) return [];
+  if (type.isEmpty) {
+    return [];
+  }
 
   List<String> p = type.split(_COMMA_REGEX)
-    ..removeWhere((piece) => piece.trim().length == 0);
-  if (p == null || p.length == 0) return [];
+    ..removeWhere((piece) => piece.trim().isEmpty);
+  
+  if (p == null || p.isEmpty) {
+    return [];
+  }
+  
+  int index = 0;
   List<Parameter> parameters = p.map((String piece) {
-    int index = p.indexOf(piece);
     piece = piece.trim();
 
     if (piece.startsWith("[")) {
       isPositional = true;
       piece = piece.substring(1);
     }
+    
     if (piece.endsWith("]")) {
       piece = piece.substring(0, piece.length - 1);
     }
@@ -345,12 +380,13 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
 
     var actualName = null;
     var split = piece.split(_SPACE_REGEX);
+    
     if (split.length > 1) {
       piece = split[0];
       actualName = split[1];
     } else {
       var c = _getTypeTree(split[0])[0];
-      if (c != "Function" &&
+      if (!(const ["Function", "List", "Iterable", "Map"].contains(c)) &&
           !compiler.classes.containsKey(c) &&
           c != "dynamic" &&
           !PRIMITIVES.contains(c) &&
@@ -368,11 +404,12 @@ List<Parameter> _getParamsFromInfo(Compiler compiler, Map<String, dynamic> data,
         }
       }
     }
-
+    
     ParameterKind kind = isOptional
         ? ParameterKind.NAMED
         : (isPositional ? ParameterKind.POSITIONAL : ParameterKind.REQUIRED);
 
+    index++;
     return new Parameter(kind, piece, actualName);
   }).toList();
 

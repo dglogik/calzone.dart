@@ -4,6 +4,7 @@ import "dart:io";
 import "dart:async";
 import "dart:convert";
 
+import "package:calzone/compiler.dart";
 import "package:calzone/patcher.dart";
 import "package:calzone/util.dart";
 
@@ -30,6 +31,7 @@ class Builder {
 
   final List<String> include;
   final List<TypeTransformer> typeTransformers;
+  final List<CompilerVisitor> compilerVisitors;
 
   final String dartFile;
   final String directory;
@@ -40,6 +42,7 @@ class Builder {
       {this.stage: BuilderStage.ALL,
       this.target: PatcherTarget.NODE,
       this.typeTransformers: const [],
+      this.compilerVisitors: const [],
       this.directory: "temp",
       this.isMinified: true})
       : this.include = include is List<String>
@@ -73,7 +76,9 @@ class Builder {
 
       var compiler = new Compiler(
           dartFile, "$directory/index.js.info.json", mangledNames,
-          typeTransformers: typeTransformers, isMinified: isMinified);
+          typeTransformers: typeTransformers,
+          compilerVisitors: compilerVisitors,
+          isMinified: isMinified);
 
       LOGGER.fine("Compiling wrapper for dart2js output");
       var str = compiler.compile(include);

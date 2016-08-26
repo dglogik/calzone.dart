@@ -26,16 +26,17 @@ class AnalyzerVisitor extends Visitor<Map> {
       var setters = [];
 
       var tree = [];
+      var implementsTree = [];
 
       if (node.extendsClause != null)
         tree.add(node.extendsClause.superclass.toString());
 
-      if (node.implementsClause != null)
-        tree.addAll(
-            node.implementsClause.interfaces.map((type) => type.toString()));
-
       if (node.withClause != null)
         tree.addAll(node.withClause.mixinTypes.map((type) => type.toString()));
+
+      if (node.implementsClause != null)
+        implementsTree.addAll(
+            node.implementsClause.interfaces.map((type) => type.toString()));
 
       var fields = node.members
           .where((member) => member is FieldDeclaration && member.isStatic);
@@ -54,6 +55,7 @@ class AnalyzerVisitor extends Visitor<Map> {
       data[node.name.toString()] = new Class(node.name.toString(), libraryName,
           staticFields: staticFields,
           inheritedFrom: tree,
+          implementsFrom: implementsTree,
           getters: getters,
           setters: setters);
     }

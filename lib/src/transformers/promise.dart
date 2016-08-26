@@ -14,7 +14,10 @@ final String _PROMISE_PREFIX =
  * be using a CommonJS/npm environment with the es6-promises package in your
  * package.json.
  */
-class PromiseTransformer implements TypeTransformer {
+class PromiseTransformer implements TypeTransformer, NamedTypeTransformer {
+  final List<String> types = ["Future"];
+  final String output = "Promise<any>";
+  
   final bool _usePolyfill;
 
   PromiseTransformer([this._usePolyfill = false]);

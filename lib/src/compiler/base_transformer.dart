@@ -28,7 +28,8 @@ class BaseTypeTransformer implements TypeTransformer {
     if (PRIMITIVES.contains(type)) return false;
 
     var list = _compiler.typeTransformers
-        .where((t) => t is StaticTypeTransformer && t.types.contains(type));
+        .where((t) => t is StaticTypeTransformer && t.types.contains(type))
+        .toList() as List<StaticTypeTransformer>;
     if (list.length == 0) return false;
 
     list.forEach((t) => t.staticTransformTo(_compiler, output, name, tree));
@@ -42,7 +43,8 @@ class BaseTypeTransformer implements TypeTransformer {
     if (PRIMITIVES.contains(type)) return false;
 
     var list = _compiler.typeTransformers
-        .where((t) => t is StaticTypeTransformer && t.types.contains(type));
+        .where((t) => t is StaticTypeTransformer && t.types.contains(type))
+        .toList() as List<StaticTypeTransformer>;
     if (list.length == 0) return false;
 
     list.forEach((t) => t.staticTransformFrom(_compiler, output, name, tree));
@@ -53,7 +55,6 @@ class BaseTypeTransformer implements TypeTransformer {
 
   transformTo(StringBuffer output, String name, tree) {
     if (tree is String) tree = _getTypeTree(tree);
-    if (tree is String) tree = [tree];
 
     var type = tree[0];
 
@@ -70,7 +71,6 @@ class BaseTypeTransformer implements TypeTransformer {
 
   transformFrom(StringBuffer output, String name, tree) {
     if (tree is String) tree = _getTypeTree(tree);
-    if (tree is String) tree = [tree];
 
     var type = tree[0];
 
