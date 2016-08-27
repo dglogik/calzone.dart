@@ -6,12 +6,12 @@ part of calzone.transformers;
  */
 class ClosureTransformer implements StaticTypeTransformer, TypeTransformer {
   final List<String> types = ["Function"];
+  final int maxValue;
 
-  ClosureTransformer();
+  ClosureTransformer([this.maxValue = 10]);
 
   transformToDart(Compiler compiler, StringBuffer output) {
     final String prefix = compiler.isMinified ? "\$" : "call\$";
-    const maxValue = const String.fromEnvironment("calzone.max_value", defaultValue: "10");
     
     output.write("""
       if (typeof obj === 'function') {
