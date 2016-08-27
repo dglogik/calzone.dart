@@ -10,26 +10,39 @@ class ClosureTransformer implements StaticTypeTransformer, TypeTransformer {
   ClosureTransformer();
 
   transformToDart(Compiler compiler, StringBuffer output) {
-    output.write(r"""
-      if(typeof obj === 'function') {
-        var argCount = (new RegExp(/function[ a-zA-Z0-9$]*\(([, a-zA-Z0-9$_]*)\)[ ]*{/))
-          .exec(obj.toString())[1]
-          .split(',')
-          .filter(function(arg) {
-            return arg.trim().length > 0;
-          })
-          .length;
-    """);
-
+    final String prefix = compiler.isMinified ? "\$" : "call\$";
+    const maxValue = const String.fromEnvironment("calzone.max_value", defaultValue: "10");
+    
     output.write("""
-        var returned = {};
-        returned['${compiler.isMinified ? "\$" : "call\$"}' + argCount] = function() {
+      if (typeof obj === 'function') {
+        var _function = function() {
           var args = new Array(arguments.length);
-          for(var i = 0; i < args.length; ++i) {
+          for (var i = 0; i < args.length; ++i) {
             args[i] = dynamicFrom(arguments[i]);
           }
           return dynamicTo(obj.apply(this, args));
         };
+        
+        if (typeof(global.Proxy) === 'function') {
+          return new Proxy({}, {
+            get: function(target, name) {
+              if (name.indexOf('$prefix') === 0) {
+                return _function;
+              }
+               
+              return undefined;
+            }
+          });
+        }
+                
+        var returned = {};
+        
+        var i = 0;
+        var l = $maxValue;
+        for (; i < l; i++) {
+          returned['$prefix' + i] = _function;
+        }
+        
         return returned;
       }
     """);

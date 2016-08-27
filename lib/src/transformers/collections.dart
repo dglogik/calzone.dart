@@ -1,7 +1,5 @@
 part of calzone.transformers;
 
-final String _MAP_PREFIX = "var \$Map = require('es6-map');";
-
 /**
  * A transformer that handles converting JavaScript Arrays, plain Objects, and
  * ES6 Maps to Dart Lists and Maps.
@@ -19,15 +17,9 @@ final String _MAP_PREFIX = "var \$Map = require('es6-map');";
  *   }
  * }
  * ```
- *
- * If a bool is provided to this class's constructor, you need to
- * be using a CommonJS/npm environment with the es6-map package in your
- * package.json.
  */
 class CollectionsTransformer implements TypeTransformer {
-  final bool _usePolyfill;
-
-  CollectionsTransformer([this._usePolyfill = false]);
+  CollectionsTransformer();
 
   transformToDart(Compiler compiler, StringBuffer output) {
     var mangledNames = compiler.mangledNames;
