@@ -26,7 +26,7 @@ class ClosureTransformer implements StaticTypeTransformer, TypeTransformer {
         if (typeof(global.Proxy) === 'function') {
           return new Proxy({}, {
             get: function(target, name) {
-              if (name.indexOf('$prefix') === 0) {
+              if (name && typeof(name.indexOf) === 'function' && name.indexOf('$prefix') === 0) {
                 return _function;
               }
                
