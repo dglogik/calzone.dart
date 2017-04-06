@@ -67,7 +67,7 @@ class Analyzer {
   String _packageRoot;
 
   Analyzer(this.compiler, String file) {
-    _packageRoot = Uri.base.path + '/packages';
+    _packageRoot = Uri.base.path;
 
     dictionary = new Dictionary(packageRoots: [_packageRoot]);
     dictionary.crawl(file);
