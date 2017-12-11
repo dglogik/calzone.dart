@@ -1,5 +1,5 @@
 name: calzone
-version: 0.3.0
+version: 0.4.0
 description: Use Dart libraries from JavaScript.
 authors:
   - Michael Bullington <m.bullington@dglogik.com>
@@ -11,8 +11,8 @@ dependencies:
   analyzer: '0.29.10'
   path: '^1.3.5'
   node_preamble: '^1.0.0'
-  calzone_analysis:
-    git: https://github.com/mbullington/analysis.git
+  calzone_source_crawler:
+    git: https://github.com/mbullington/calzone_source_crawler.git
     # path: ../analysis
   logging: '^0.11.3'
 dev_dependencies:

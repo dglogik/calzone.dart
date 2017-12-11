@@ -48,7 +48,7 @@ class Builder {
       : this.include = include is List<String>
             ? include
             : new File(include).readAsLinesSync().where((line) =>
-                line.trim().length > 0 && !line.trim().startsWith("#"));
+                line.trim().length > 0 && !line.trim().startsWith("#")).toList();
 
   Future<String> build() async {
     if (stage == BuilderStage.COMPILE || stage == BuilderStage.ALL) {
@@ -78,10 +78,11 @@ class Builder {
           dartFile, "$directory/index.js.info.json", mangledNames,
           typeTransformers: typeTransformers,
           compilerVisitors: compilerVisitors,
+          includeDeclaration: include,
           isMinified: isMinified);
 
       LOGGER.fine("Compiling wrapper for dart2js output");
-      var str = compiler.compile(include);
+      var str = compiler.compile();
       str = await onWrapperGenerated(str);
 
       var patcher = new Patcher("$directory/index.js",

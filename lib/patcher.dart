@@ -127,30 +127,11 @@ class Patcher {
 
   Patcher(dynamic compiledFile, dynamic infoFile, dynamic wrapperFile,
       {this.target: PatcherTarget.BROWSER, this.isMinified: false})
-      : _compiledFile = compiledFile is String
-            ? new File(compiledFile).readAsLinesSync()
-            : compiledFile.split("\n"),
-        _infoFile = infoFile is String
-            ? JSON.decode(new File(infoFile).readAsStringSync())
-            : infoFile,
-        _wrapperFile = wrapperFile is String
-            ? new File(wrapperFile).readAsLinesSync()
-            : wrapperFile;
+      : _compiledFile = compiledFile is String ? new File(compiledFile).readAsLinesSync() : compiledFile.split("\n"),
+        _infoFile = infoFile is String ? JSON.decode(new File(infoFile).readAsStringSync()) : infoFile,
+        _wrapperFile = wrapperFile is String ? new File(wrapperFile).readAsLinesSync() : wrapperFile;
 
   String patch() {
-    var FUNCTION_ARGUMENTS_PREAMBLE = """
-      function _dartFunctionArguments(a) {
-        var prefix = '${isMinified ? r'$' : r'call$'}';
-        var index = 0;
-
-        while(true) {
-          if(a[prefix + index.toString()])
-            return (prefix + index.toString());
-          index++;
-        }
-      }
-    """;
-
     var data = _compiledFile;
 
     if (target == PatcherTarget.NODE) {
@@ -158,28 +139,19 @@ class Patcher {
       data.insert(0, preamble.getPreamble());
     }
 
-    data.insert(0, FUNCTION_ARGUMENTS_PREAMBLE);
-
     var index = data.length;
     var reversed = []..addAll(data.reversed);
-
-    var foundTypeCheck = false;
-    var foundMain = false;
 
     if (isMinified) {
       var json = _infoFile;
 
       var main = "main";
-      var _isTest = "_isTest";
-      var isTestLine = "";
 
       _iterate(number) {
-        var iter = json["elements"]["library"][number]["children"]
-            .where((child) => child.contains("function"));
+        var iter = json["elements"]["library"][number]["children"].where((child) => child.contains("function"));
         iter = iter.toList();
 
-        var classes = json["elements"]["library"][number]["children"]
-            .where((child) => child.contains("class"));
+        var classes = json["elements"]["library"][number]["children"].where((child) => child.contains("class"));
 
         for (var c in classes) {
           c = c.split("/");
@@ -189,8 +161,7 @@ class Patcher {
 
           var data = json["elements"][type][id];
 
-          iter.addAll(
-              data["children"].where((child) => child.contains("function")));
+          iter.addAll(data["children"].where((child) => child.contains("function")));
         }
 
         for (var func in iter) {
@@ -201,23 +172,17 @@ class Patcher {
 
           var childData = json["elements"][type][id];
 
-          if (childData["name"] == "main")
+          if (childData["name"] == "main") {
             main = childData["code"].split(":")[0].trim();
-
-          if (childData["name"] == "_isTest") {
-            _isTest = childData["code"].split(":")[0].trim();
-            isTestLine = childData["code"].split("\n")[0].trim();
+            return true;
           }
         }
+
+        return false;
       }
 
       for (var library in json["elements"]["library"].values) {
-        if (library["id"] == "library/0") {
-          _iterate("0");
-        }
-
-        if (library["name"] == "_js_helper") {
-          _iterate(library["id"].split("/")[1]);
+        if (_iterate(library["id"].split("/")[1])) {
           break;
         }
       }
@@ -233,36 +198,10 @@ class Patcher {
                 ..add('})()'));
         }
 
-        if (line.startsWith(isTestLine)) {
-          data[index + 1] = """
-          var index = this.b.length;
-          var indexTwo = !!this.c ? (index + this.c.length) : index;
-          var prefix = '\$';
-          var str = _dartFunctionArguments(a);
-
-          if(!a[prefix + index])
-            a[prefix + index] = function() { return this[str].apply(this, arguments); };
-
-          if(!a[prefix + indexTwo])
-            a[prefix + indexTwo] = function() { return this[str].apply(this, arguments); };
-
-          return true;
-          },
-          """
-              .split("\n")
-              .map((s) => s.trim())
-              .join("");
-
-          foundTypeCheck = true;
-          if (foundMain && foundTypeCheck) break;
-        }
-
         if (line.startsWith("$main:")) {
-          data[index + 6] =
-              data[index + 6].substring(data[index + 6].indexOf("}") + 2);
+          data[index + 6] = data[index + 6].substring(data[index + 6].indexOf("}") + 2);
           data.replaceRange(index, index + 6, ["$main:[function(a){},"]);
-          foundMain = true;
-          if (foundMain && foundTypeCheck) break;
+          break;
         }
       }
     } else {
@@ -273,38 +212,9 @@ class Patcher {
           continue;
         }
 
-        if (line.contains(
-            "buildFunctionType: function(returnType, parameterTypes, optionalParameterTypes) {")) {
-          data[index + 1] = """
-            var proto = Object.create(new H.RuntimeFunctionType(returnType, parameterTypes, optionalParameterTypes, null));
-            proto._isTest\$1 = function(a) {
-              var index = parameterTypes.length;
-              var indexTwo = optionalParameterTypes ? (index + optionalParameterTypes.length) : index;
-              var prefix = 'call\$';
-              var str = _dartFunctionArguments(a);
-
-              if(!a[prefix + index])
-                a[prefix + index] = function() { return this[str].apply(this, arguments); };
-
-              if(!a[prefix + indexTwo])
-                a[prefix + indexTwo] = function() { return this[str].apply(this, arguments); };
-
-              return true;
-            };
-            return proto;
-          """
-              .split("\n")
-              .map((s) => s.trim())
-              .join("");
-
-          foundTypeCheck = true;
-          if (foundMain && foundTypeCheck) break;
-        }
-
         if (line.contains("main: [function(args) {")) {
           data.removeRange(index + 1, index + 8);
-          foundMain = true;
-          if (foundMain && foundTypeCheck) break;
+          break;
         }
       }
     }
@@ -315,8 +225,7 @@ class Patcher {
 
 class Scraper extends Patcher {
   Scraper(dynamic compiledFile, dynamic infoFile, {isMinified: false})
-      : super(compiledFile, infoFile, _SCRAPER.split("\n"),
-            target: PatcherTarget.NODE, isMinified: isMinified);
+      : super(compiledFile, infoFile, _SCRAPER.split("\n"), target: PatcherTarget.NODE, isMinified: isMinified);
 
   Future<String> scrape() async {
     var patch = super.patch();

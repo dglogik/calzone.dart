@@ -15,6 +15,11 @@ class ClosureTransformer implements StaticTypeTransformer, TypeTransformer {
     
     output.write("""
       if (typeof obj === 'function') {
+        var funcSym = Symbol.for("calzone.closure");
+        if (obj[funcSym]) {
+          return obj[funcSym];
+        }
+        
         var _function = function() {
           var args = new Array(arguments.length);
           for (var i = 0; i < args.length; ++i) {
@@ -43,6 +48,7 @@ class ClosureTransformer implements StaticTypeTransformer, TypeTransformer {
           returned['$prefix' + i] = _function;
         }
         
+        obj[funcSym] = returned;
         return returned;
       }
     """);
@@ -58,7 +64,7 @@ class ClosureTransformer implements StaticTypeTransformer, TypeTransformer {
     List<List> types = tree.sublist(1, tree.length - 1);
     output.write("""
       var _${name}_ = $name;
-      $name = {
+      $name = _${name}_[Symbol.for("calzone.closure")] || (_${name}_[Symbol.for("calzone.closure")] = {
         ${compiler.isMinified ? "\$${types.length}" : "call\$${types.length}"}: function() {
           var args = new Array(arguments.length);
           for(var i = 0; i < args.length; ++i) {
@@ -66,7 +72,7 @@ class ClosureTransformer implements StaticTypeTransformer, TypeTransformer {
           }
           return dynamicFrom(_${name}_.apply(this, args));
         }
-      };
+      });
     """);
   }
 

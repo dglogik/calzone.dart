@@ -29,52 +29,42 @@ class Class extends _SymbolTypes implements Renderable {
 
   renderDefinition(StringBuffer output, String name,
       StringBuffer constructor, StringBuffer prototype,
-      List<StringBuffer> methodChecks) {
+      List<String> methodChecks) {
 
     output.write("""
-      mdex.$name = function() {
+      clVa = mdex.$name = function() {
         $constructor
 
         this[$symDartObj][$symBackup] = {};
         this[$symDartObj][$symJsObj] = this;
+    """);
 
+    if (methodChecks.isNotEmpty) {
+      output.write("""
         var proto = mdex.$name.prototype;
         if(Object.getPrototypeOf(this) !== proto) {
-    """);
-
-    methodChecks.forEach((check) => output.write(check.toString()));
-
-    output.write("""
+          overrideFunc(this, proto, [${methodChecks.join(",")}]);
         }
-      };
-    """);
+      """);
+    }
+
+    output.write("};");
 
     final proto = prototype.toString();
 
     if (proto.length > 0) {
       // cut off trailing comma
       output.write("""
-        mdex.$name.prototype = {
+        clVa.prototype = {
           ${proto.substring(0, proto.length - 1)}
         };
       """);
     }
 
     output.write("""
-      mdex.$name.prototype[$symIsWrapped] = true;
-      mdex.$name.prototype["constructor"] = mdex.$name;
-
-      mdex.$name.class = function() {
-        function $name() {
-          mdex.$name.apply(this, arguments);
-          console.error('$name.class is deprecated, please change to only use $name');
-        }
-
-        $name.prototype = Object.create(mdex.$name.prototype);
-        $name.prototype["constructor"] = $name;
-
-        return $name;
-    }();
+      clVa.prototype[$symIsWrapped] = true;
+      clVa.prototype["constructor"] = clVa;
+      clVa.class = clVa;
     """);
   }
 
@@ -89,7 +79,7 @@ class Class extends _SymbolTypes implements Renderable {
       
     // list of function/field names in the class
     final List<String> names = [];
-    final List<StringBuffer> methods = [];
+    final List<String> methods = [];
 
     final StringBuffer constructor = new StringBuffer();
     final StringBuffer prototype = new StringBuffer();
@@ -257,8 +247,6 @@ class Class extends _SymbolTypes implements Renderable {
                 }  
               }
 
-              StringBuffer buf = new StringBuffer();
-
               // extracts the number of arguments in the function
               // used in case we need to shift arguments when overriding
               // a Dart function
@@ -269,9 +257,7 @@ class Class extends _SymbolTypes implements Renderable {
                   .length;
 
               var dartName = data["code"].split(":")[0];
-              buf.write("overrideFunc(this, proto, '$name', '$dartName', ${length - params.length});");
-
-              methods.add(buf);
+              methods.add("['$name', '$dartName', ${length - params.length}]");
             }
           }
         }

@@ -31,7 +31,8 @@ class Compiler {
   Compiler(String dartFile, dynamic infoFile, dynamic mangledFile,
       {this.typeTransformers: const [],
         this.compilerVisitors: const [],
-        this.isMinified: false})
+        this.isMinified: false,
+        this.includeDeclaration})
       : info = new InfoData(infoFile is String
             ? JSON.decode(new File(infoFile).readAsStringSync())
             : infoFile),
@@ -53,8 +54,12 @@ class Compiler {
     baseTransformer = new BaseTypeTransformer(this);
   }
 
-  String compile(List<String> include) {
-    includeDeclaration = include;
+  String compile([List<String> include = null]) {
+    if (include != null && include.isNotEmpty) {
+      includeDeclaration = include;
+    }
+    include = includeDeclaration;
+    
     StringBuffer output = new StringBuffer();
     
     for (CompilerVisitor visitor in compilerVisitors) {

@@ -128,25 +128,38 @@ final String _OVERRIDE_PREFIX = """
   var mdex = module.exports;
   var obdp = Object.defineProperty;
   var obfr = Object.freeze;
+  var clVa;
 
   var ${_SymbolTypes.isWrapped} = sSym ? Symbol.for("calzone.isWrapped") : "__isWrapped__";
   var ${_SymbolTypes.dartObj} = sSym ? Symbol.for("calzone.obj") : "__obj__";
   var ${_SymbolTypes.jsObj} = sSym ? Symbol.for("calzone.id") : "__calzone_id__";
   var ${_SymbolTypes.backup} = sSym ? Symbol.for("calzone.backup") : "__backup__";
 
-  function overrideFunc(cl, proto, name, mangledName, shift) {
-    if(cl[name] === proto[name])
-      return;
-    cl[${_SymbolTypes.dartObj}][${_SymbolTypes.backup}][mangledName] = cl[${_SymbolTypes.dartObj}][mangledName];
-    cl[${_SymbolTypes.dartObj}][mangledName] = function() {
-      var args = new Array(arguments.length);
-      var length = args.length;
-      for(var i = shift; i < length; ++i) {
-        args[i - shift] = dynamicFrom(arguments[i]);
-      }
+  function overrideFunc(cl, proto, data) {
+    var di = 0;
+    var datLen = data.length;
+    for (; di < datLen; di++) {
+      var dat = data[di];
+      var name = dat[0];
+      var mangledName = dat[1];
+      var shift = dat[2];
 
-      return dynamicTo((cl[name]).apply(cl, args));
-    };
+      if(cl[name] === proto[name])
+        continue;
+
+      (function(name, mangledName, shift) {
+        cl[${_SymbolTypes.dartObj}][${_SymbolTypes.backup}][mangledName] = cl[${_SymbolTypes.dartObj}][mangledName];
+        cl[${_SymbolTypes.dartObj}][mangledName] = function() {
+          var args = new Array(arguments.length);
+          var length = args.length;
+          for(var i = shift; i < length; ++i) {
+            args[i - shift] = dynamicFrom(arguments[i]);
+          }
+
+          return dynamicTo((cl[name]).apply(cl, args));
+        };
+      })(name, mangledName, shift);
+    }
   }
 """;
 

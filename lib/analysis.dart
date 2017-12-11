@@ -1,6 +1,6 @@
 library calzone.analysis;
 
-import "package:calzone_analysis/analysis.dart";
+import "package:calzone_source_crawler/analysis.dart";
 import "package:analyzer/analyzer.dart";
 
 import "package:path/path.dart" as path;
